@@ -14,11 +14,21 @@ const API = {
         return headers;
     },
 
+    // Global fetch wrapper
+    async fetch(url, options = {}) {
+        options.headers = this.getHeaders(options.headers || {});
+        const response = await fetch(url, options);
+        if (response.status === 401) {
+            this.logout();
+        }
+        return response;
+    },
+
     // Auth
     async login(email, password) {
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/login`, {
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/login`, {
             method: 'POST',
-            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
         const data = await response.json();
@@ -29,9 +39,9 @@ const API = {
     },
 
     async register(email, username, password) {
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/register`, {
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/register`, {
             method: 'POST',
-            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, username, password })
         });
         return await response.json();
@@ -40,9 +50,7 @@ const API = {
     async getMe() {
         const token = localStorage.getItem('ett_token');
         if (!token) return null;
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/me?token=${token}`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/me?token=${token}`);
         return await response.json();
     },
 
@@ -53,23 +61,18 @@ const API = {
 
     // Videos
     async listVideos() {
-        const response = await fetch(`${CONFIG.API_URL}/video/list`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/video/list`);
         return await response.json();
     },
 
     async searchVideos(query) {
-        const response = await fetch(`${CONFIG.API_URL}/video/search?q=${encodeURIComponent(query)}`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/video/search?q=${encodeURIComponent(query)}`);
         return await response.json();
     },
 
     async uploadVideo(formData) {
-        const response = await fetch(`${CONFIG.UPLOAD_URL}/video/upload`, {
+        const response = await this.fetch(`${CONFIG.UPLOAD_URL}/video/upload`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: formData
         });
         return await response.json();
@@ -78,11 +81,20 @@ const API = {
     async uploadSubtitles(videoId, file) {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await fetch(`${CONFIG.UPLOAD_URL}/video/upload-subtitles/${videoId}`, {
+        const response = await this.fetch(`${CONFIG.UPLOAD_URL}/video/upload-subtitles/${videoId}`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: formData
         });
+        return await response.json();
+    },
+
+    async getVideoStream(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/video/stream/${videoId}`);
+        return await response.json();
+    },
+
+    async getRecommendations(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/video/recommendations/${videoId}`);
         return await response.json();
     },
 
@@ -92,23 +104,17 @@ const API = {
 
     // Studio
     async getStudioAnalytics() {
-        const response = await fetch(`${CONFIG.API_URL}/studio/analytics`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/analytics`);
         return await response.json();
     },
 
     async getStudioVideos() {
-        const response = await fetch(`${CONFIG.API_URL}/studio/videos`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/videos`);
         return await response.json();
     },
 
     async getStudioVideo(videoId) {
-        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}`);
         return await response.json();
     },
 
@@ -117,9 +123,8 @@ const API = {
         for (const [key, value] of Object.entries(metadata)) {
             if (value !== undefined) params.append(key, value);
         }
-        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}/update?${params.toString()}`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}/update?${params.toString()}`, {
+            method: 'POST'
         });
         return await response.json();
     },
@@ -127,108 +132,94 @@ const API = {
     async updateStudioThumbnail(videoId, file) {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}/thumbnail`, {
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}/thumbnail`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: formData
         });
         return await response.json();
     },
 
     async deleteVideo(videoId) {
-        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}`, {
-            method: 'DELETE',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}`, {
+            method: 'DELETE'
         });
         return await response.json();
     },
 
     // Tokens
     async getBalance() {
-        const response = await fetch(`${CONFIG.API_URL}/tokens/balance`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/tokens/balance`);
         return await response.json();
     },
 
     async earnTokens(actionType) {
-        const response = await fetch(`${CONFIG.API_URL}/tokens/earn`, {
+        const response = await this.fetch(`${CONFIG.API_URL}/tokens/earn`, {
             method: 'POST',
-            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: 0, action_type: actionType })
         });
         return await response.json();
     },
 
     async getAdToWatch() {
-        const response = await fetch(`${CONFIG.API_URL}/tokens/ad-to-watch`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.API_URL}/tokens/ad-to-watch`);
         return await response.json();
     },
 
     async createAd(title, content, views) {
-        const response = await fetch(`${CONFIG.API_URL}/tokens/create-ad`, {
+        const response = await this.fetch(`${CONFIG.API_URL}/tokens/create-ad`, {
             method: 'POST',
-            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, content, views })
         });
         return await response.json();
     },
 
     async purchaseSponsorship() {
-        const response = await fetch(`${CONFIG.API_URL}/tokens/sponsor`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.API_URL}/tokens/sponsor`, {
+            method: 'POST'
         });
         return await response.json();
     },
 
     // Moderation
     async reportVideo(videoId, reason) {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/report`, {
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/report`, {
             method: 'POST',
-            headers: this.getHeaders({ 'Content-Type': 'application/json' }),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ video_id: videoId, reason: reason })
         });
         return await response.json();
     },
 
     async takeModAction(reportId, action) {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
+            method: 'POST'
         });
         return await response.json();
     },
 
     async getAdminUsers() {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/users`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/users`);
         return await response.json();
     },
 
     async updateAdminUserRole(userId, role) {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/user/${userId}/role?role=${role}`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/user/${userId}/role?role=${role}`, {
+            method: 'POST'
         });
         return await response.json();
     },
 
     async adjustAdminUserTokens(userId, amount) {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/user/${userId}/tokens?amount=${amount}`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/user/${userId}/tokens?amount=${amount}`, {
+            method: 'POST'
         });
         return await response.json();
     },
 
     async getAdminLogs() {
-        const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/logs`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/logs`);
         return await response.json();
     },
 
@@ -239,26 +230,22 @@ const API = {
         if (description !== undefined) params.append('description', description);
         if (socialLinks !== undefined) params.append('social_links', JSON.stringify(socialLinks));
 
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/update-profile?${params.toString()}`, {
-            method: 'POST',
-            headers: this.getHeaders()
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/update-profile?${params.toString()}`, {
+            method: 'POST'
         });
         return await response.json();
     },
 
     async getChannel(username) {
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/channel/${username}`, {
-            headers: this.getHeaders()
-        });
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/channel/${username}`);
         return await response.json();
     },
 
     async uploadAvatar(file) {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/upload-avatar`, {
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/upload-avatar`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: formData
         });
         return await response.json();
@@ -267,9 +254,8 @@ const API = {
     async uploadBanner(file) {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/upload-banner`, {
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/upload-banner`, {
             method: 'POST',
-            headers: this.getHeaders(),
             body: formData
         });
         return await response.json();

@@ -240,7 +240,7 @@
                         document.getElementById('creator-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${video.owner_avatar}`;
                     }
                     
-                    const streamData = await (await fetch(`${CONFIG.API_URL}/video/stream/${videoId}`)).json();
+                    const streamData = await API.getVideoStream(videoId);
                     const videoElement = document.getElementById('main-video');
                     
                     const streamBaseUrl = streamData.type === 'hls' ? CONFIG.STREAM_URL : CONFIG.API_URL;
@@ -280,11 +280,15 @@
 
                     if (streamData.type === 'hls') {
                         if (Hls.isSupported()) {
-                            const hls = new Hls();
+                            const hls = new Hls({
+                                xhrSetup: function (xhr, url) {
+                                    xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
+                                }
+                            });
                             hls.loadSource(fullStreamUrl);
                             hls.attachMedia(videoElement);
                         } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                            // Native support (Safari)
+                            // Native support (Safari) - hard to set headers here, but hopefully HLS is handled
                             videoElement.src = fullStreamUrl;
                         }
                     } else {
@@ -296,7 +300,7 @@
 
                     // Load recommendations from API
                     const recommendationsList = document.getElementById('recommendations-list');
-                    const recs = await (await fetch(`${CONFIG.API_URL}/video/recommendations/${videoId}`)).json();
+                    const recs = await API.getRecommendations(videoId);
                     
                     if (recs.length === 0) {
                         recommendationsList.innerHTML = '<p style="font-size: 12px; color: var(--text-secondary);">No related videos yet.</p>';

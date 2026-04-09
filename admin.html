@@ -78,18 +78,13 @@
     <script src="js/api.js"></script>
     <script>
         API.getReports = async () => {
-            const token = localStorage.getItem('ett_token');
-            const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/reports`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await API.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/reports`);
             return await response.json();
         };
 
         API.takeModAction = async (reportId, action) => {
-            const token = localStorage.getItem('ett_token');
-            const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await API.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
+                method: 'POST'
             });
             return await response.json();
         };
