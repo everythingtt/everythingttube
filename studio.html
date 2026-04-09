@@ -76,6 +76,44 @@
         .delete-icon:hover {
             color: var(--primary-color);
         }
+        .studio-header {
+            width: 100%;
+            height: 200px;
+            background: #222;
+            background-size: cover;
+            background-position: center;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 24px;
+        }
+        .studio-profile-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 16px;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+        }
+        .studio-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--primary-color);
+            object-fit: cover;
+            background: #333;
+        }
+        .studio-name h2 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        .studio-name p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -101,7 +139,15 @@
     </div>
 
     <main>
-        <h2 style="margin-bottom: 24px;">Channel Dashboard</h2>
+        <div id="studio-banner" class="studio-header">
+            <div class="studio-profile-info">
+                <img id="studio-avatar-img" src="https://via.placeholder.com/80" class="studio-avatar" alt="Avatar">
+                <div class="studio-name">
+                    <h2 id="studio-username">Channel Name</h2>
+                    <p id="studio-role">Content Creator</p>
+                </div>
+            </div>
+        </div>
         
         <div class="studio-grid" id="analytics-summary">
             <div class="stat-card">
@@ -146,6 +192,23 @@
                 document.getElementById('total-views').textContent = analytics.total_views.toLocaleString();
                 document.getElementById('total-videos').textContent = analytics.total_videos;
                 document.getElementById('token-balance').textContent = analytics.token_balance.toFixed(1);
+
+                const user = await API.getMe();
+                if (user) {
+                    document.getElementById('studio-username').textContent = user.username;
+                    document.getElementById('studio-username').style.cursor = 'pointer';
+                    document.getElementById('studio-username').onclick = () => location.href = `channel.html?u=${user.username}`;
+                    document.getElementById('studio-avatar-img').style.cursor = 'pointer';
+                    document.getElementById('studio-avatar-img').onclick = () => location.href = `channel.html?u=${user.username}`;
+                    
+                    document.getElementById('studio-role').textContent = user.role.toUpperCase();
+                    if (user.avatar) {
+                        document.getElementById('studio-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                    }
+                    if (user.banner) {
+                        document.getElementById('studio-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}')`;
+                    }
+                }
 
                 const videos = await API.getStudioVideos();
                 const videoList = document.getElementById('creator-video-list');

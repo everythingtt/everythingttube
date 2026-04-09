@@ -33,6 +33,39 @@
             border-radius: 50%;
             background: #333;
             object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+        .banner-preview {
+            width: 100%;
+            height: 150px;
+            border-radius: 8px;
+            background: #222;
+            margin-bottom: 24px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .upload-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+            border-radius: inherit;
+        }
+        .banner-preview:hover .upload-overlay,
+        .avatar-container:hover .upload-overlay {
+            opacity: 1;
+        }
+        .avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
         }
     </style>
 </head>
@@ -60,10 +93,23 @@
 
     <main>
         <div class="settings-container">
-            <h2 style="margin-bottom: 24px;">Channel Settings</h2>
+            <h2 style="margin-bottom: 24px;">Channel Customization</h2>
             
+            <div id="channel-banner" class="banner-preview">
+                <div class="upload-overlay" onclick="document.getElementById('banner-input').click()">
+                    <i class="fas fa-camera"></i>&nbsp;Change Banner
+                </div>
+            </div>
+            <input type="file" id="banner-input" style="display: none;" accept="image/*" onchange="uploadBanner(this)">
+
             <div class="profile-preview">
-                <img id="profile-avatar" src="https://via.placeholder.com/80" alt="Avatar">
+                <div class="avatar-container">
+                    <img id="profile-avatar" src="https://via.placeholder.com/80" alt="Avatar">
+                    <div class="upload-overlay" onclick="document.getElementById('avatar-input').click()">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                </div>
+                <input type="file" id="avatar-input" style="display: none;" accept="image/*" onchange="uploadAvatar(this)">
                 <div>
                     <h3 id="profile-username-display">Username</h3>
                     <p style="color: var(--text-secondary); font-size: 14px;" id="profile-role">Creator</p>
@@ -79,7 +125,48 @@
                     <label>Email Address</label>
                     <input type="email" id="email" placeholder="Enter new email">
                 </div>
-                <button type="submit" class="primary-btn">Save Changes</button>
+                <div class="form-group">
+                    <label>Channel Description</label>
+                    <textarea id="description" style="width: 100%; height: 100px; background: #121212; border: 1px solid var(--border-color); border-radius: 4px; color: white; padding: 12px; font-family: inherit;" placeholder="Tell viewers about your channel..."></textarea>
+                </div>
+                
+                <h3 style="margin: 24px 0 12px; font-size: 16px; color: var(--text-secondary);">Social Links</h3>
+                <div id="social-links-inputs">
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/youtube.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="youtube" placeholder="YouTube URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/twitter-x.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="twitter" placeholder="Twitter URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/discord.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="discord" placeholder="Discord URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/facebook.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="facebook" placeholder="Facebook URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/gmail.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="gmail" placeholder="Business Email (URL/mailto)">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/tumblr.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="tumblr" placeholder="Tumblr URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/devianart.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="devianart" placeholder="DeviantArt URL">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="social-images/bilibili.png" style="width: 24px; height: 24px;">
+                        <input type="text" data-platform="bilibili" placeholder="Bilibili URL">
+                    </div>
+                </div>
+
+                <button type="submit" class="primary-btn">Save All Changes</button>
             </form>
         </div>
     </main>
@@ -92,9 +179,51 @@
             if (user) {
                 document.getElementById('username').value = user.username;
                 document.getElementById('email').value = user.email;
+                document.getElementById('description').value = user.description || '';
+                
+                if (user.social_links) {
+                    try {
+                        const links = JSON.parse(user.social_links);
+                        Object.entries(links).forEach(([platform, url]) => {
+                            const input = document.querySelector(`input[data-platform="${platform}"]`);
+                            if (input) input.value = url;
+                        });
+                    } catch(e) {}
+                }
+
                 document.getElementById('profile-username-display').textContent = user.username;
                 document.getElementById('profile-role').textContent = user.role.toUpperCase();
-                // If user has avatar logic, update it here
+                
+                if (user.avatar) {
+                    document.getElementById('profile-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                }
+                if (user.banner) {
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}')`;
+                }
+            }
+        }
+
+        async function uploadAvatar(input) {
+            if (input.files && input.files[0]) {
+                const result = await API.uploadAvatar(input.files[0]);
+                if (result.avatar) {
+                    document.getElementById('profile-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${result.avatar}`;
+                    alert("Avatar updated!");
+                } else {
+                    alert(result.detail || "Upload failed");
+                }
+            }
+        }
+
+        async function uploadBanner(input) {
+            if (input.files && input.files[0]) {
+                const result = await API.uploadBanner(input.files[0]);
+                if (result.banner) {
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${result.banner}')`;
+                    alert("Banner updated!");
+                } else {
+                    alert(result.detail || "Upload failed");
+                }
             }
         }
 
@@ -102,8 +231,14 @@
             e.preventDefault();
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
+            const description = document.getElementById('description').value;
             
-            const result = await API.updateProfile(username, email);
+            const socialLinks = {};
+            document.querySelectorAll('#social-links-inputs input').forEach(input => {
+                if (input.value) socialLinks[input.dataset.platform] = input.value;
+            });
+            
+            const result = await API.updateProfile(username, email, description, socialLinks);
             alert(result.message || result.detail);
             if (result.message) {
                 location.reload();

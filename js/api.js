@@ -59,6 +59,20 @@ const API = {
         return await response.json();
     },
 
+    async uploadSubtitles(videoId, file) {
+        const token = localStorage.getItem('ett_token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${CONFIG.UPLOAD_URL}/video/upload-subtitles/${videoId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        return await response.json();
+    },
+
     getVideoStreamUrl(videoId) {
         return `${CONFIG.STREAM_URL}/video/stream/${videoId}`;
     },
@@ -195,11 +209,46 @@ const API = {
         return await response.json();
     },
 
-    async updateProfile(username, email) {
+    async updateProfile(username, email, description, socialLinks) {
         const token = localStorage.getItem('ett_token');
-        const response = await fetch(`${CONFIG.AUTH_URL}/auth/update-profile?username=${username || ''}&email=${email || ''}`, {
+        const params = new URLSearchParams();
+        if (username) params.append('username', username);
+        if (email) params.append('email', email);
+        if (description !== undefined) params.append('description', description);
+        if (socialLinks !== undefined) params.append('social_links', JSON.stringify(socialLinks));
+
+        const response = await fetch(`${CONFIG.AUTH_URL}/auth/update-profile?${params.toString()}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return await response.json();
+    },
+
+    async getChannel(username) {
+        const response = await fetch(`${CONFIG.AUTH_URL}/auth/channel/${username}`);
+        return await response.json();
+    },
+
+    async uploadAvatar(file) {
+        const token = localStorage.getItem('ett_token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${CONFIG.AUTH_URL}/auth/upload-avatar`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        return await response.json();
+    },
+
+    async uploadBanner(file) {
+        const token = localStorage.getItem('ett_token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${CONFIG.AUTH_URL}/auth/upload-banner`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
         });
         return await response.json();
     }

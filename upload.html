@@ -70,8 +70,36 @@
                     <textarea id="description" name="description" rows="4" style="width: 100%; background: #121212; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 4px;" placeholder="What's your video about?"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="tags">Tags (comma-separated)</label>
+                    <input type="text" id="tags" name="tags" placeholder="gaming, tutorial, vlog">
+                </div>
+                <div class="form-group">
+                    <label for="hashtags">Hashtags (e.g. #gaming #fun)</label>
+                    <input type="text" id="hashtags" name="hashtags" placeholder="#everythingttube #video">
+                </div>
+                <div class="form-group">
+                    <label for="quality">Target Quality</label>
+                    <select id="quality" name="quality" style="width: 100%; background: #121212; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 4px;">
+                        <option value="144p">144p (Free)</option>
+                        <option value="240p">240p (Free)</option>
+                        <option value="360p" selected>360p (Free)</option>
+                        <option value="480p">480p (100 ETT)</option>
+                        <option value="720p">720p (250 ETT)</option>
+                        <option value="1080p">1080p HD (750 ETT)</option>
+                        <option value="1440p">1440p FULL HD (1500 ETT)</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="video-file">Video File (MP4, max 500MB)</label>
                     <input type="file" id="video-file" name="file" accept="video/mp4" required>
+                </div>
+                <div class="form-group">
+                    <label for="subtitle-file">Subtitles (Optional, .vtt or .srt)</label>
+                    <input type="file" id="subtitle-file" name="subtitles" accept=".vtt,.srt">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="auto-generate-subtitles" name="auto_generate_subtitles" style="width: auto;">
+                    <label for="auto-generate-subtitles" style="margin-bottom: 0;">Auto-generate subtitles (EN, FR, RU, AR, PT)</label>
                 </div>
                 <div class="form-group">
                     <label for="thumbnail-file">Thumbnail (JPG/PNG)</label>
@@ -105,7 +133,17 @@
 
             const formData = new FormData(uploadForm);
             
-            uploadStatus.textContent = 'Uploading... Please wait.';
+            // Fix: Ensure auto_generate_subtitles is sent as a boolean-friendly string
+            const autoGenerate = document.getElementById('auto-generate-subtitles').checked;
+            formData.set('auto_generate_subtitles', autoGenerate);
+
+            // Don't include subtitles in the main video upload if handled separately
+            const subtitleFile = document.getElementById('subtitle-file').files[0];
+            if (subtitleFile) {
+                formData.delete('subtitles');
+            }
+            
+            uploadStatus.textContent = 'Uploading Video... Please wait.';
             progressContainer.style.display = 'block';
             progressFill.style.width = '0%';
 
@@ -121,10 +159,19 @@
                 }
             };
 
-            xhr.onload = () => {
+            xhr.onload = async () => {
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (xhr.status === 200 || xhr.status === 201) {
+                        const videoId = response.video_id;
+                        
+                        // Handle subtitle upload if needed
+                        if (subtitleFile) {
+                            uploadStatus.textContent = 'Uploading Subtitles...';
+                            const subResult = await API.uploadSubtitles(videoId, subtitleFile);
+                            console.log("Subtitles result:", subResult);
+                        }
+
                         uploadStatus.textContent = 'Upload complete! Processing has started.';
                         setTimeout(() => {
                             location.href = `studio.html`;

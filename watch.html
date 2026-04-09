@@ -42,6 +42,47 @@
             align-items: center;
             color: var(--text-secondary);
             font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .creator-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .creator-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #333;
+        }
+        .creator-details h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+        .creator-details p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .video-description-box {
+            background: #272727;
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .banner-container {
+            width: 100%;
+            height: 100px;
+            background: #222;
+            background-size: cover;
+            background-position: center;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
         }
         .action-buttons {
             display: flex;
@@ -111,14 +152,20 @@
     <main style="margin-left: 0;">
         <div class="watch-container">
             <div class="player-section">
+                <div id="channel-banner-box" class="banner-container"></div>
                 <div class="video-player">
                     <video id="main-video" controls autoplay>
                         <source id="video-source" src="" type="video/mp4">
+                        <!-- Tracks will be added dynamically -->
                         Your browser does not support the video tag.
                     </video>
                 </div>
                 <div class="video-details">
-                    <h2 id="video-title">Loading...</h2>
+                    <div id="video-hashtags" style="color: #3ea6ff; font-size: 12px; margin-bottom: 4px;"></div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <h2 id="video-title" style="margin-bottom: 0;">Loading...</h2>
+                        <span id="video-quality-badge" style="background: #333; color: #aaa; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; display: none;"></span>
+                    </div>
                     <div class="video-meta">
                         <span id="video-views">... views • ...</span>
                         <div class="action-buttons">
@@ -128,7 +175,15 @@
                         </div>
                     </div>
                 </div>
-                <div id="video-description" style="padding: 16px 0; font-size: 14px;">
+                <div class="creator-info">
+                    <img id="creator-avatar" src="https://via.placeholder.com/40" class="creator-avatar" alt="Avatar" style="cursor: pointer;">
+                    <div class="creator-details">
+                        <h3 id="creator-name" style="cursor: pointer;">Creator</h3>
+                        <p id="creator-status">Verified</p>
+                    </div>
+                    <button class="action-btn" style="margin-left: auto; background: white; color: black; font-weight: bold;">Subscribe</button>
+                </div>
+                <div id="video-description" class="video-description-box">
                     <!-- Description will be populated here -->
                 </div>
             </div>
@@ -161,10 +216,73 @@
                     document.getElementById('video-views').textContent = `${video.views} views • ${new Date(video.created_at).toLocaleDateString()}`;
                     document.getElementById('video-description').textContent = video.description || 'No description provided.';
                     
+                    // Populate Quality Badge
+                    if (video.quality) {
+                        const qBadge = document.getElementById('video-quality-badge');
+                        qBadge.textContent = video.quality.toUpperCase();
+                        qBadge.style.display = 'inline-block';
+                        if (['1080P', '1440P'].includes(video.quality.toUpperCase())) {
+                            qBadge.style.background = '#ff0000';
+                            qBadge.style.color = 'white';
+                        }
+                    }
+
+                    // Populate hashtags
+                    if (video.hashtags) {
+                        document.getElementById('video-hashtags').textContent = video.hashtags;
+                    }
+
+                    // Populate Creator Info
+                    document.getElementById('creator-name').textContent = video.owner_name;
+                    document.getElementById('creator-name').onclick = () => location.href = `channel.html?u=${video.owner_name}`;
+                    document.getElementById('creator-avatar').onclick = () => location.href = `channel.html?u=${video.owner_name}`;
+                    
+                    if (video.owner_avatar) {
+                        document.getElementById('creator-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${video.owner_avatar}`;
+                    }
+                    if (video.owner_banner) {
+                        const bannerBox = document.getElementById('channel-banner-box');
+                        bannerBox.style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${video.owner_banner}')`;
+                        bannerBox.style.display = 'block';
+                    }
+                    
                     const streamData = await (await fetch(`${CONFIG.API_URL}/video/stream/${videoId}`)).json();
                     const videoElement = document.getElementById('main-video');
+                    
                     const streamBaseUrl = streamData.type === 'hls' ? CONFIG.STREAM_URL : CONFIG.API_URL;
                     const fullStreamUrl = `${streamBaseUrl}${streamData.url}`;
+
+                    // Handle Subtitles
+                    // 1. Manual Subtitles
+                    if (streamData.subtitles) {
+                        const track = document.createElement('track');
+                        track.kind = 'subtitles';
+                        track.label = 'English (Manual)';
+                        track.srclang = 'en';
+                        track.src = `${CONFIG.API_URL}${streamData.subtitles}`;
+                        track.default = true;
+                        videoElement.appendChild(track);
+                    }
+
+                    // 2. Auto-generated Subtitles
+                    if (streamData.auto_subtitles) {
+                        const langNames = {
+                            en: 'English (Auto)',
+                            fr: 'French (Auto)',
+                            ru: 'Russian (Auto)',
+                            ar: 'Arabic (Auto)',
+                            pt: 'Portuguese (Auto)'
+                        };
+                        
+                        for (const [lang, filename] of Object.entries(streamData.auto_subtitles)) {
+                            const track = document.createElement('track');
+                            track.kind = 'subtitles';
+                            track.label = langNames[lang] || lang.toUpperCase();
+                            track.srclang = lang;
+                            track.src = `${CONFIG.API_URL}/storage/subtitles/${filename}`;
+                            videoElement.appendChild(track);
+                        }
+                    }
 
                     if (streamData.type === 'hls') {
                         if (Hls.isSupported()) {
@@ -191,7 +309,7 @@
                     } else {
                         recommendationsList.innerHTML = recs.map(v => `
                             <div class="rec-item" onclick="location.href='watch.html?id=${v.id}'">
-                                <img src="${API.getServiceUrl('api')}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" alt="${v.title}">
+                                <img src="${CONFIG.API_URL}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" alt="${v.title}">
                                 <div class="rec-item-info">
                                     <h4>${v.title}</h4>
                                     <p>${v.owner_name || 'Creator'}</p>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Channel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .channel-header {
+            width: 100%;
+            height: 250px;
+            background: #222;
+            background-size: cover;
+            background-position: center;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+        .channel-info-bar {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+            padding: 0 16px;
+        }
+        .channel-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--background-color);
+            margin-top: -60px;
+            object-fit: cover;
+            background: #333;
+            z-index: 10;
+        }
+        .channel-meta {
+            flex: 1;
+        }
+        .channel-meta h1 {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+        .channel-meta p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        .channel-description {
+            max-width: 800px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+        }
+        .social-links {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .social-icon {
+            width: 32px;
+            height: 32px;
+            transition: transform 0.2s;
+        }
+        .social-icon:hover {
+            transform: scale(1.1);
+        }
+        .channel-tabs {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+            display: flex;
+            gap: 32px;
+        }
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: bold;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: white;
+            border-bottom-color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search videos...">
+            <button id="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
+    </div>
+
+    <main>
+        <div id="channel-banner" class="channel-header"></div>
+        
+        <div class="channel-info-bar">
+            <img id="channel-avatar-img" src="https://via.placeholder.com/120" class="channel-avatar" alt="Avatar">
+            <div class="channel-meta">
+                <h1 id="channel-name">Channel Name</h1>
+                <p id="channel-stats">0 videos • Joined ...</p>
+                <div id="channel-desc" class="channel-description">No description provided.</div>
+                <div id="social-links" class="social-links">
+                    <!-- Social links will be populated here -->
+                </div>
+            </div>
+            <button class="primary-btn" style="background: white; color: black; font-weight: bold; padding: 10px 24px;">Subscribe</button>
+        </div>
+
+        <div class="channel-tabs">
+            <div class="tab active">Videos</div>
+            <div class="tab">About</div>
+        </div>
+
+        <div id="channel-video-list" class="video-grid">
+            <!-- Videos will be populated here -->
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('u');
+
+        async function loadChannel() {
+            if (!username) {
+                location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const channel = await API.getChannel(username);
+                if (channel.detail) {
+                    alert("Channel not found");
+                    location.href = 'index.html';
+                    return;
+                }
+
+                document.title = `${channel.username} - EverythingTTUBE`;
+                document.getElementById('channel-name').textContent = channel.username;
+                document.getElementById('channel-stats').textContent = `${channel.videos.length} videos • Joined ${new Date(channel.created_at).toLocaleDateString()}`;
+                
+                if (channel.description) {
+                    document.getElementById('channel-desc').textContent = channel.description;
+                }
+
+                if (channel.avatar) {
+                    document.getElementById('channel-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${channel.avatar}`;
+                }
+
+                if (channel.banner) {
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${channel.banner}')`;
+                }
+
+                // Populate social links
+                const socialContainer = document.getElementById('social-links');
+                if (channel.social_links) {
+                    try {
+                        const links = JSON.parse(channel.social_links);
+                        const icons = {
+                            youtube: 'social-images/youtube.png',
+                            twitter: 'social-images/twitter-x.png',
+                            discord: 'social-images/discord.png',
+                            facebook: 'social-images/facebook.png',
+                            gmail: 'social-images/gmail.png',
+                            tumblr: 'social-images/tumblr.png',
+                            devianart: 'social-images/devianart.png',
+                            bilibili: 'social-images/bilibili.png'
+                        };
+
+                        for (const [platform, url] of Object.entries(links)) {
+                            if (url && icons[platform]) {
+                                const a = document.createElement('a');
+                                a.href = url.startsWith('http') ? url : `https://${url}`;
+                                a.target = '_blank';
+                                a.innerHTML = `<img src="${icons[platform]}" class="social-icon" alt="${platform}" title="${platform}">`;
+                                socialContainer.appendChild(a);
+                            }
+                        }
+                    } catch (e) { console.error("Social links parse error", e); }
+                }
+
+                // Populate videos
+                const videoList = document.getElementById('channel-video-list');
+                if (channel.videos.length === 0) {
+                    videoList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; margin-top: 40px;">This channel has no videos.</p>';
+                } else {
+                    videoList.innerHTML = channel.videos.map(video => `
+                        <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
+                            <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${video.title}">
+                            <div class="video-info">
+                                <h3>${video.title}</h3>
+                                <p>${video.views} views • ${new Date(video.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error("Error loading channel:", error);
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChannel();
+            checkLogin();
+        });
+    </script>
+</body>
+</html>
