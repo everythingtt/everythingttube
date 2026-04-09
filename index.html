@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Home</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
+        </div>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search videos...">
+            <button id="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <!-- Logged in info will be here -->
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <div id="admin-nav" style="display: none;">
+            <a href="admin.html"><i class="fas fa-user-shield"></i> Admin Panel</a>
+            <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        </div>
+        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> Network</a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> Policies</a>
+    </div>
+
+    <main>
+        <div id="video-list" class="video-grid">
+            <!-- Videos will be populated here -->
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadVideos(query = null) {
+            const videoList = document.getElementById('video-list');
+            try {
+                const videos = query ? await API.searchVideos(query) : await API.listVideos();
+                if (videos.length === 0) {
+                    videoList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; margin-top: 40px;">No videos found.</p>';
+                    return;
+                }
+                videoList.innerHTML = videos.map(video => `
+                    <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
+                        <img class="thumbnail" src="${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${video.title}">
+                        <div class="video-info">
+                            <h3>${video.title}</h3>
+                            <p>${video.owner_name || 'Creator'}</p>
+                            <p>${video.views} views • ${new Date(video.created_at).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                videoList.innerHTML = '<p>Error loading videos. Make sure backend is running.</p>';
+                console.error(error);
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+                if (user.role === 'admin') {
+                    document.getElementById('admin-nav').style.display = 'block';
+                }
+            }
+        }
+
+        // Search handler
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value;
+            loadVideos(query);
+        });
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadVideos(e.target.value);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVideos();
+            checkLogin();
+        });
+    </script>
+</body>
+</html>

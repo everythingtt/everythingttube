@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Monetization & Tokens</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .token-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .balance-hero {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 32px;
+            border: 1px solid #ffd700;
+        }
+        .balance-hero .amount {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            margin: 16px 0;
+        }
+        .earn-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .earn-card {
+            background: var(--card-bg-color);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .earn-card i {
+            font-size: 32px;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+        .earn-card h3 {
+            margin-bottom: 12px;
+        }
+        .earn-card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        .sponsorship-rules {
+            background: #111;
+            padding: 32px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+        .sponsorship-rules ul {
+            list-style: none;
+            margin-top: 16px;
+        }
+        .sponsorship-rules li {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sponsorship-rules i {
+            color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="tokens.html" class="active"><i class="fas fa-coins"></i> Monetization</a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> Network</a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> Policies</a>
+    </div>
+
+    <main>
+        <div class="token-container">
+            <div class="balance-hero">
+                <h3>Current ETT Balance</h3>
+                <div class="amount" id="main-balance">0.0</div>
+                <p>Scarcity Level: High | Token Value: Platform Utility</p>
+            </div>
+
+            <h2 style="margin-bottom: 24px;">Ways to Earn</h2>
+            <div class="earn-methods">
+                <div class="earn-card">
+                    <i class="fas fa-ad"></i>
+                    <h3>Watch Ads</h3>
+                    <p>View platform-sponsored content to support creators and earn tokens.</p>
+                    <button class="primary-btn" onclick="simulateAd()">Earn 0.5 ETT</button>
+                </div>
+                <!-- New Ad Creator Section -->
+                <div class="earn-card" style="border-color: #ffd700;">
+                    <i class="fas fa-bullhorn" style="color: #ffd700;"></i>
+                    <h3>Create Ad</h3>
+                    <p>Spend tokens to promote your brand or channel. 10 ETT per view.</p>
+                    <button class="primary-btn" onclick="showAdCreator()" style="background: #333; border: 1px solid #ffd700;">Schedule Ads</button>
+                </div>
+                <div class="earn-card">
+                    <i class="fas fa-heart"></i>
+                    <h3>Engagement</h3>
+                    <p>Liking, commenting, and sharing videos earns you micro-rewards.</p>
+                    <button class="primary-btn" disabled style="background: #444;">Automatic</button>
+                </div>
+                <div class="earn-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Sponsorships</h3>
+                    <p>Refer new creators or brands to the platform for massive bonuses.</p>
+                    <button class="primary-btn" onclick="alert('Referral program coming soon!')">Get Link</button>
+                </div>
+            </div>
+
+            <div class="sponsorship-rules">
+                <h2>Promotion Rules</h2>
+                <p>Use your hard-earned ETT Tokens to boost your content visibility.</p>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> <strong>Cost:</strong> 30,000 Tokens per 7 days.</li>
+                    <li><i class="fas fa-check-circle"></i> <strong>Reach:</strong> Guaranteed 150,000 impressions.</li>
+                    <li><i class="fas fa-check-circle"></i> <strong>Placement:</strong> Homepage Hero and Recommended Sidebar.</li>
+                    <li><i class="fas fa-check-circle"></i> <strong>Analytics:</strong> Detailed engagement report provided in Studio.</li>
+                </ul>
+                <button class="primary-btn" style="margin-top: 20px; width: auto; padding: 12px 32px;" onclick="purchaseSponsorship()">Purchase Promotion</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadBalance() {
+            try {
+                const result = await API.getBalance();
+                document.getElementById('main-balance').textContent = result.balance.toFixed(1);
+            } catch (err) {
+                console.error("Balance error:", err);
+            }
+        }
+
+        async function simulateAd() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = "Loading Ad...";
+            
+            try {
+                const ad = await API.getAdToWatch();
+                
+                // Show a simple modal or overlay for the ad
+                const overlay = document.createElement('div');
+                overlay.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;";
+                overlay.innerHTML = `
+                    <div style="background: #1a1a1a; padding: 40px; border-radius: 12px; border: 1px solid #ffd700; max-width: 500px; width: 100%; text-align: center;">
+                        <span style="color: #ffd700; font-size: 12px; text-transform: uppercase;">Sponsored Content</span>
+                        <h2 style="margin: 20px 0;">${ad.title}</h2>
+                        <p style="color: #ccc; line-height: 1.6; margin-bottom: 30px;">${ad.content}</p>
+                        <div id="ad-timer" style="font-weight: bold; font-size: 20px;">5</div>
+                        <p style="font-size: 12px; color: #666; margin-top: 10px;">Tokens will be awarded when timer ends</p>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                let timeLeft = 5;
+                const timer = setInterval(async () => {
+                    timeLeft--;
+                    document.getElementById('ad-timer').textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        const result = await API.earnTokens('earn_ad');
+                        document.body.removeChild(overlay);
+                        if (result.new_balance !== undefined) {
+                            alert(`Ad complete! You earned 0.5 ETT.`);
+                            loadBalance();
+                            checkLogin();
+                        }
+                        btn.disabled = false;
+                        btn.textContent = "Earn 0.5 ETT";
+                    }
+                }, 1000);
+            } catch (err) {
+                console.error("Ad error:", err);
+                btn.disabled = false;
+                btn.textContent = "Earn 0.5 ETT";
+            }
+        }
+
+        async function showAdCreator() {
+            const title = prompt("Enter Ad Title:");
+            if (!title) return;
+            const content = prompt("Enter Ad Content (Text only):");
+            if (!content) return;
+            const views = prompt("Enter Number of Views (10 ETT per view):", "10");
+            if (!views || isNaN(views)) return;
+            
+            const result = await API.createAd(title, content, parseInt(views));
+            alert(result.message || result.detail);
+            if (result.message) {
+                loadBalance();
+                checkLogin();
+            }
+        }
+
+        async function purchaseSponsorship() {
+            if (confirm("Confirm purchase of 7-day promotion for 30,000 ETT?")) {
+                const result = await API.purchaseSponsorship();
+                alert(result.message || result.detail);
+                if (result.message) {
+                    loadBalance();
+                    checkLogin();
+                }
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadBalance();
+        });
+    </script>
+</body>
+</html>

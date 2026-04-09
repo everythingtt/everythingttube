@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Policies</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="admin.html"><i class="fas fa-user-shield"></i> Admin</a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> Network</a>
+        <a href="policies.html" class="active"><i class="fas fa-gavel"></i> Policies</a>
+    </div>
+
+    <main>
+        <div class="auth-container" style="max-width: 800px; margin: 20px auto; text-align: left;">
+            <div id="policy-content" style="line-height: 1.8; color: var(--text-color);">
+                <h2>EverythingTTUBE Policies</h2>
+                <p>Loading policies...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script>
+        async function loadPolicies() {
+            // In a real app, this would be an endpoint
+            // For now, let's fetch the markdown file directly if served, or just hardcode for static
+            const policyContent = document.getElementById('policy-content');
+            try {
+                // Since this is static, we'll fetch the markdown file
+                const response = await fetch('../configs/legal_policies.md');
+                if (response.ok) {
+                    const text = await response.text();
+                    policyContent.innerHTML = marked.parse(text);
+                } else {
+                    policyContent.innerHTML = `
+                        <h2>1. Terms of Service (ToS)</h2>
+                        <p>By using EverythingTTUBE, you agree to be at least 13 years of age and not upload illegal content.</p>
+                        <h2>2. Privacy Policy</h2>
+                        <p>We store your email and encrypted password locally on our self-hosted infrastructure.</p>
+                        <h2>3. Copyright Policy</h2>
+                        <p>EverythingTTUBE respects intellectual property. DMCA reports are handled via our moderation system.</p>
+                    `;
+                }
+            } catch (err) {
+                policyContent.innerHTML = '<p>Error loading policies.</p>';
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPolicies();
+            checkLogin();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE Studio - Settings</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg-color);
+            padding: 32px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; margin-bottom: 8px; color: var(--text-secondary); }
+        .form-group input { width: 100%; padding: 12px; background: #121212; border: 1px solid var(--border-color); border-radius: 4px; color: white; }
+        
+        .profile-preview {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .profile-preview img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #333;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Studio</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to TTUBE</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="studio.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload Content</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
+        <a href="settings.html" class="active"><i class="fas fa-cog"></i> Studio Settings</a>
+    </div>
+
+    <main>
+        <div class="settings-container">
+            <h2 style="margin-bottom: 24px;">Channel Settings</h2>
+            
+            <div class="profile-preview">
+                <img id="profile-avatar" src="https://via.placeholder.com/80" alt="Avatar">
+                <div>
+                    <h3 id="profile-username-display">Username</h3>
+                    <p style="color: var(--text-secondary); font-size: 14px;" id="profile-role">Creator</p>
+                </div>
+            </div>
+
+            <form id="settings-form">
+                <div class="form-group">
+                    <label>Display Name (Username)</label>
+                    <input type="text" id="username" placeholder="Enter new username">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="Enter new email">
+                </div>
+                <button type="submit" class="primary-btn">Save Changes</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadProfile() {
+            const user = await API.getMe();
+            if (user) {
+                document.getElementById('username').value = user.username;
+                document.getElementById('email').value = user.email;
+                document.getElementById('profile-username-display').textContent = user.username;
+                document.getElementById('profile-role').textContent = user.role.toUpperCase();
+                // If user has avatar logic, update it here
+            }
+        }
+
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            
+            const result = await API.updateProfile(username, email);
+            alert(result.message || result.detail);
+            if (result.message) {
+                location.reload();
+            }
+        });
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <span style="color: white; margin-left: 15px;">${user.username}</span>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadProfile();
+        });
+    </script>
+</body>
+</html>

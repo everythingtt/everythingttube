@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Upload</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .upload-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--card-bg-color);
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .upload-container h2 {
+            margin-bottom: 24px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #2a2a2a;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+            display: none;
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
+        <a href="upload.html" class="active"><i class="fas fa-upload"></i> Upload</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="admin.html"><i class="fas fa-user-shield"></i> Admin</a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> Network</a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> Policies</a>
+    </div>
+
+    <main>
+        <div class="upload-container">
+            <h2>Upload a Video</h2>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" required placeholder="Enter video title">
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="4" style="width: 100%; background: #121212; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 4px;" placeholder="What's your video about?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="video-file">Video File (MP4, max 500MB)</label>
+                    <input type="file" id="video-file" name="file" accept="video/mp4" required>
+                </div>
+                <div class="form-group">
+                    <label for="thumbnail-file">Thumbnail (JPG/PNG)</label>
+                    <input type="file" id="thumbnail-file" name="thumbnail" accept="image/*">
+                </div>
+                <button type="submit" class="primary-btn">Publish Video</button>
+            </form>
+            <div id="progress-container" class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <p id="upload-status" style="margin-top: 16px; color: var(--text-secondary); text-align: center;"></p>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        const uploadForm = document.getElementById('upload-form');
+        const uploadStatus = document.getElementById('upload-status');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+
+        uploadForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('ett_token');
+            if (!token) {
+                alert('Please sign in to upload videos.');
+                location.href = 'auth.html';
+                return;
+            }
+
+            const formData = new FormData(uploadForm);
+            
+            uploadStatus.textContent = 'Uploading... Please wait.';
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${CONFIG.UPLOAD_URL}/video/upload`, true);
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressFill.style.width = percentComplete + '%';
+                    uploadStatus.textContent = `Uploading: ${Math.round(percentComplete)}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        uploadStatus.textContent = 'Upload complete! Processing has started.';
+                        setTimeout(() => {
+                            location.href = `studio.html`;
+                        }, 2000);
+                    } else {
+                        uploadStatus.textContent = `Upload failed: ${response.detail || 'Unknown error'}`;
+                    }
+                } catch (e) {
+                    uploadStatus.textContent = 'Upload failed: Server error';
+                }
+            };
+
+            xhr.onerror = () => {
+                uploadStatus.textContent = 'Network error during upload.';
+            };
+
+            xhr.send(formData);
+        };
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+        });
+    </script>
+</body>
+</html>

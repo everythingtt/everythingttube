@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE Admin - System Logs</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-table {
+            width: 100%;
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .admin-table th, .admin-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-table th { background: #222; }
+        .log-level {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .level-INFO { background: #1976d2; color: white; }
+        .level-WARNING { background: #f57c00; color: white; }
+        .level-ERROR { background: #d32f2f; color: white; }
+        .level-ACTION { background: #7b1fa2; color: white; }
+        
+        .log-message {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Admin</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="admin.html"><i class="fas fa-user-shield"></i> Pending Reports</a>
+        <a href="users.html"><i class="fas fa-users"></i> User Management</a>
+        <a href="logs.html" class="active"><i class="fas fa-list-ul"></i> System Logs</a>
+    </div>
+
+    <main>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2>System Audit Logs</h2>
+            <button class="primary-btn" style="width: auto; margin-top: 0; padding: 8px 16px;" onclick="loadLogs()">Refresh</button>
+        </div>
+        
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Level</th>
+                        <th>Message</th>
+                        <th>User ID</th>
+                    </tr>
+                </thead>
+                <tbody id="log-list">
+                    <!-- Logs will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadLogs() {
+            try {
+                const logs = await API.getAdminLogs();
+                const container = document.getElementById('log-list');
+                
+                if (logs.detail) {
+                    container.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--primary-color);">${logs.detail}</td></tr>`;
+                    return;
+                }
+
+                if (logs.length === 0) {
+                    container.innerHTML = '<tr><td colspan="4" style="text-align: center;">No system logs available.</td></tr>';
+                    return;
+                }
+
+                container.innerHTML = logs.map(l => `
+                    <tr>
+                        <td style="color: var(--text-secondary); white-space: nowrap;">${new Date(l.created_at).toLocaleString()}</td>
+                        <td><span class="log-level level-${l.level}">${l.level}</span></td>
+                        <td class="log-message">${l.message}</td>
+                        <td>${l.user_id ? `#${l.user_id}` : 'System'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Admin logs load error:", err);
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                if (user.role !== 'admin') {
+                    alert("Unauthorized access. Admins only.");
+                    location.href = 'index.html';
+                    return;
+                }
+                userInfo.innerHTML = `
+                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadLogs();
+        });
+    </script>
+</body>
+</html>

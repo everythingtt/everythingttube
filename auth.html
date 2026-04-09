@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Sign In</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="background-color: #0f0f0f; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+    <div class="auth-container">
+        <a href="index.html" class="logo" style="display: block; text-align: center; margin-bottom: 24px;">Everything<span>TTUBE</span></a>
+        
+        <div id="login-form-container">
+            <h2>Sign In</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                <button type="submit" class="primary-btn">Sign In</button>
+                <p id="login-error" style="color: var(--primary-color); margin-top: 12px; font-size: 14px; text-align: center;"></p>
+            </form>
+            <p style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-secondary);">
+                New to EverythingTTUBE? <a href="#" id="show-register" style="color: white;">Create an account</a>
+            </p>
+        </div>
+
+        <div id="register-form-container" style="display: none;">
+            <h2>Create Account</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" name="password" required>
+                </div>
+                <button type="submit" class="primary-btn">Create Account</button>
+                <p id="reg-error" style="color: var(--primary-color); margin-top: 12px; font-size: 14px; text-align: center;"></p>
+            </form>
+            <p style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-secondary);">
+                Already have an account? <a href="#" id="show-login" style="color: white;">Sign In</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        const loginContainer = document.getElementById('login-form-container');
+        const registerContainer = document.getElementById('register-form-container');
+        const showRegister = document.getElementById('show-register');
+        const showLogin = document.getElementById('show-login');
+
+        showRegister.onclick = (e) => {
+            e.preventDefault();
+            loginContainer.style.display = 'none';
+            registerContainer.style.display = 'block';
+        };
+
+        showLogin.onclick = (e) => {
+            e.preventDefault();
+            registerContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+        };
+
+        document.getElementById('login-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            const password = e.target.password.value;
+            const error = document.getElementById('login-error');
+            
+            try {
+                const data = await API.login(email, password);
+                if (data.access_token) {
+                    location.href = 'index.html';
+                } else {
+                    error.textContent = data.detail || 'Login failed.';
+                }
+            } catch (err) {
+                error.textContent = 'Error connecting to auth server.';
+            }
+        };
+
+        document.getElementById('register-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            const username = e.target.username.value;
+            const password = e.target.password.value;
+            const error = document.getElementById('reg-error');
+
+            try {
+                const data = await API.register(email, username, password);
+                if (data.message) {
+                    alert(data.message);
+                    loginContainer.style.display = 'block';
+                    registerContainer.style.display = 'none';
+                } else {
+                    error.textContent = data.detail || 'Registration failed.';
+                }
+            } catch (err) {
+                error.textContent = 'Error connecting to auth server.';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE Studio - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .studio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: var(--card-bg-color);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .stat-card h3 {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+        }
+        .video-manager {
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        .video-manager table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .video-manager th, .video-manager td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .video-manager th {
+            background: #222;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .video-manager tr:hover {
+            background: #252525;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-ready { background: #2e7d32; color: white; }
+        .status-processing { background: #f57c00; color: white; }
+        .status-failed { background: #c62828; color: white; }
+        
+        .action-icon {
+            cursor: pointer;
+            color: var(--text-secondary);
+            margin-right: 12px;
+        }
+        .action-icon:hover {
+            color: white;
+        }
+        .delete-icon:hover {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Studio</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to TTUBE</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="studio.html" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="upload.html"><i class="fas fa-upload"></i> Upload Content</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
+        <a href="settings.html"><i class="fas fa-cog"></i> Studio Settings</a>
+    </div>
+
+    <main>
+        <h2 style="margin-bottom: 24px;">Channel Dashboard</h2>
+        
+        <div class="studio-grid" id="analytics-summary">
+            <div class="stat-card">
+                <h3>Total Views</h3>
+                <div class="value" id="total-views">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Videos</h3>
+                <div class="value" id="total-videos">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>ETT Tokens</h3>
+                <div class="value" id="token-balance" style="color: #ffd700;">0</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 16px;">Content Manager</h3>
+        <div class="video-manager">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Video</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Views</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="creator-video-list">
+                    <!-- Videos will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadDashboard() {
+            try {
+                const analytics = await API.getStudioAnalytics();
+                document.getElementById('total-views').textContent = analytics.total_views.toLocaleString();
+                document.getElementById('total-videos').textContent = analytics.total_videos;
+                document.getElementById('token-balance').textContent = analytics.token_balance.toFixed(1);
+
+                const videos = await API.getStudioVideos();
+                const videoList = document.getElementById('creator-video-list');
+                
+                if (videos.length === 0) {
+                    videoList.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No videos uploaded yet.</td></tr>';
+                    return;
+                }
+
+                videoList.innerHTML = videos.map(video => `
+                    <tr>
+                        <td style="display: flex; gap: 12px; align-items: center;">
+                            <img src="${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" style="width: 100px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;">
+                            <div>
+                                <div style="font-weight: bold;">${video.title}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${video.description || ''}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-${video.status}">${video.status.toUpperCase()}</span>
+                        </td>
+                        <td>${new Date(video.created_at).toLocaleDateString()}</td>
+                        <td>${video.views}</td>
+                        <td>
+                            <i class="fas fa-edit action-icon" title="Edit Metadata"></i>
+                            <i class="fas fa-trash action-icon delete-icon" onclick="confirmDelete(${video.id})" title="Delete Video"></i>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error("Studio error:", error);
+            }
+        }
+
+        async function confirmDelete(videoId) {
+            if (confirm("Are you sure you want to permanently delete this video? This action cannot be undone.")) {
+                const result = await API.deleteVideo(videoId);
+                alert(result.message);
+                loadDashboard();
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                userInfo.innerHTML = `
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <span style="color: white; margin-left: 15px;">${user.username}</span>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadDashboard();
+        });
+    </script>
+</body>
+</html>

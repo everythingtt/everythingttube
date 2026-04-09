@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE Admin - User Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-table {
+            width: 100%;
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .admin-table th, .admin-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-table th { background: #222; }
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .role-admin { background: #d32f2f; color: white; }
+        .role-moderator { background: #f57c00; color: white; }
+        .role-creator { background: #1976d2; color: white; }
+        .role-user { background: #616161; color: white; }
+        
+        .action-group {
+            display: flex;
+            gap: 8px;
+        }
+        select, input {
+            background: #121212;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Admin</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="admin.html"><i class="fas fa-user-shield"></i> Pending Reports</a>
+        <a href="users.html" class="active"><i class="fas fa-users"></i> User Management</a>
+        <a href="logs.html"><i class="fas fa-list-ul"></i> System Logs</a>
+    </div>
+
+    <main>
+        <h2 style="margin-bottom: 24px;">User Management</h2>
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>ETT Tokens</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list">
+                    <!-- Users will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        async function loadUsers() {
+            try {
+                const users = await API.getAdminUsers();
+                const container = document.getElementById('user-list');
+                
+                if (users.detail) {
+                    container.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--primary-color);">${users.detail}</td></tr>`;
+                    return;
+                }
+
+                container.innerHTML = users.map(u => `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.email}</td>
+                        <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+                        <td>${u.ett_tokens.toFixed(2)} ETT</td>
+                        <td class="action-group">
+                            <select onchange="updateRole(${u.id}, this.value)">
+                                <option value="">Change Role</option>
+                                <option value="user">User</option>
+                                <option value="creator">Creator</option>
+                                <option value="moderator">Moderator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <button class="primary-btn" style="width: auto; margin-top: 0; padding: 4px 8px;" onclick="addTokens(${u.id})">+ Tokens</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Admin user load error:", err);
+            }
+        }
+
+        async function updateRole(userId, newRole) {
+            if (!newRole) return;
+            if (confirm(`Change user #${userId} role to ${newRole}?`)) {
+                const result = await API.updateAdminUserRole(userId, newRole);
+                alert(result.message);
+                loadUsers();
+            }
+        }
+
+        async function addTokens(userId) {
+            const amount = prompt("Enter ETT amount to add (or negative to remove):");
+            if (amount !== null && !isNaN(amount)) {
+                const result = await API.adjustAdminUserTokens(userId, parseFloat(amount));
+                alert(result.message);
+                loadUsers();
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                if (user.role !== 'admin') {
+                    alert("Unauthorized access. Admins only.");
+                    location.href = 'index.html';
+                    return;
+                }
+                userInfo.innerHTML = `
+                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadUsers();
+        });
+    </script>
+</body>
+</html>

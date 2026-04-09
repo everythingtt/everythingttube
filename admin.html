@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Admin Moderation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-table {
+            width: 100%;
+            background: var(--card-bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .admin-table th, .admin-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .admin-table th { background: #222; }
+        .reason-badge {
+            background: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .action-btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-remove { background: #c62828; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-dismiss { background: #2e7d32; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Admin</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="admin.html" class="active"><i class="fas fa-user-shield"></i> Pending Reports</a>
+        <a href="users.html"><i class="fas fa-users"></i> User Management</a>
+        <a href="logs.html"><i class="fas fa-list-ul"></i> System Logs</a>
+    </div>
+
+    <main>
+        <h2 style="margin-bottom: 24px;">Content Moderation Queue</h2>
+        <div class="admin-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Video ID</th>
+                        <th>Reporter</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="report-list">
+                    <!-- Reports will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        API.getReports = async () => {
+            const token = localStorage.getItem('ett_token');
+            const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/reports`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return await response.json();
+        };
+
+        API.takeModAction = async (reportId, action) => {
+            const token = localStorage.getItem('ett_token');
+            const response = await fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            return await response.json();
+        };
+
+        async function loadReports() {
+            try {
+                const reports = await API.getReports();
+                const container = document.getElementById('report-list');
+                
+                if (reports.detail) {
+                    container.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--primary-color);">${reports.detail}</td></tr>`;
+                    return;
+                }
+
+                if (reports.length === 0) {
+                    container.innerHTML = '<tr><td colspan="5" style="text-align: center;">No pending reports. Great job!</td></tr>';
+                    return;
+                }
+
+                container.innerHTML = reports.map(r => `
+                    <tr>
+                        <td>#${r.video_id}</td>
+                        <td>User #${r.reporter_id}</td>
+                        <td><span class="reason-badge">${r.reason}</span></td>
+                        <td>${new Date(r.created_at).toLocaleDateString()}</td>
+                        <td class="action-btn-group">
+                            <button class="btn-remove" onclick="modAction(${r.id}, 'remove')">Remove</button>
+                            <button class="btn-dismiss" onclick="modAction(${r.id}, 'dismiss')">Dismiss</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Admin error:", err);
+            }
+        }
+
+        async function modAction(reportId, action) {
+            if (confirm(`Confirm ${action} action for report #${reportId}?`)) {
+                const result = await API.takeModAction(reportId, action);
+                alert(result.message);
+                loadReports();
+            }
+        }
+
+        async function checkLogin() {
+            const user = await API.getMe();
+            const userInfo = document.getElementById('user-info');
+            if (user && user.id) {
+                if (user.role !== 'admin') {
+                    alert("Unauthorized access. Admins only.");
+                    location.href = 'index.html';
+                    return;
+                }
+                userInfo.innerHTML = `
+                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
+                `;
+            } else {
+                location.href = 'auth.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkLogin();
+            loadReports();
+        });
+    </script>
+</body>
+</html>
