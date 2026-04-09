@@ -76,6 +76,67 @@
         .delete-icon:hover {
             color: var(--primary-color);
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg-color);
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 32px;
+            position: relative;
+        }
+        .close-modal {
+            position: absolute;
+            top: 20px; right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        .edit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .edit-thumbnail-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #222;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .edit-thumbnail-container img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .edit-thumbnail-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        .edit-thumbnail-container:hover .edit-thumbnail-overlay {
+            opacity: 1;
+        }
+
         .studio-header {
             width: 100%;
             height: 200px;
@@ -149,6 +210,11 @@
             </div>
         </div>
         
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="margin: 0;">Channel Dashboard</h2>
+            <button onclick="loadDashboard()" class="action-btn"><i class="fas fa-sync"></i> Refresh Data</button>
+        </div>
+        
         <div class="studio-grid" id="analytics-summary">
             <div class="stat-card">
                 <h3>Total Views</h3>
@@ -182,6 +248,65 @@
             </table>
         </div>
     </main>
+
+    <!-- Edit Video Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeEditModal()">&times;</span>
+            <h2 style="margin-bottom: 24px;">Edit Video Details</h2>
+            
+            <form id="edit-video-form">
+                <input type="hidden" id="edit-video-id">
+                <div class="edit-grid">
+                    <div class="edit-left">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="edit-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="edit-description" style="width: 100%; height: 120px; background: #121212; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 4px;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Tags (comma-separated)</label>
+                            <input type="text" id="edit-tags">
+                        </div>
+                        <div class="form-group">
+                            <label>Hashtags</label>
+                            <input type="text" id="edit-hashtags">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="edit-is-public" style="width: auto;">
+                            <label style="margin-bottom: 0;">Public Video</label>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 24px;">
+                            <label>Manage Subtitles</label>
+                            <div id="edit-subtitle-status" style="font-size: 14px; margin-bottom: 10px; color: var(--text-secondary);"></div>
+                            <input type="file" id="edit-subtitle-input" accept=".vtt,.srt" style="font-size: 12px;">
+                            <p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">Upload new .vtt or .srt to replace current subtitles.</p>
+                        </div>
+                    </div>
+                    <div class="edit-right">
+                        <label>Thumbnail</label>
+                        <div class="edit-thumbnail-container">
+                            <img id="edit-thumbnail-preview" src="https://via.placeholder.com/320x180" alt="Thumbnail">
+                            <div class="edit-thumbnail-overlay" onclick="document.getElementById('edit-thumbnail-input').click()">
+                                <i class="fas fa-camera fa-2x"></i>
+                            </div>
+                        </div>
+                        <input type="file" id="edit-thumbnail-input" style="display: none;" accept="image/*" onchange="previewThumbnail(this)">
+                        <p style="font-size: 12px; color: var(--text-secondary); text-align: center;">Click image to change thumbnail</p>
+                        
+                        <div style="margin-top: 32px;">
+                            <button type="submit" class="primary-btn" style="width: 100%;">Save Changes</button>
+                            <button type="button" class="action-btn" style="width: 100%; margin-top: 12px;" onclick="closeEditModal()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
@@ -233,7 +358,7 @@
                         <td>${new Date(video.created_at).toLocaleDateString()}</td>
                         <td>${video.views}</td>
                         <td>
-                            <i class="fas fa-edit action-icon" title="Edit Metadata"></i>
+                            <i class="fas fa-edit action-icon" title="Edit Metadata" onclick="openEditModal(${video.id})"></i>
                             <i class="fas fa-trash action-icon delete-icon" onclick="confirmDelete(${video.id})" title="Delete Video"></i>
                         </td>
                     </tr>
@@ -242,6 +367,84 @@
                 console.error("Studio error:", error);
             }
         }
+
+        async function openEditModal(videoId) {
+            try {
+                const video = await API.getStudioVideo(videoId);
+                document.getElementById('edit-video-id').value = video.id;
+                document.getElementById('edit-title').value = video.title;
+                document.getElementById('edit-description').value = video.description || '';
+                document.getElementById('edit-tags').value = video.tags || '';
+                document.getElementById('edit-hashtags').value = video.hashtags || '';
+                document.getElementById('edit-is-public').checked = video.is_public;
+                
+                // Subtitle status
+                const subStatus = document.getElementById('edit-subtitle-status');
+                if (video.subtitles) {
+                    subStatus.innerHTML = `<i class="fas fa-check-circle" style="color: #4caf50;"></i> Manual subtitles uploaded`;
+                } else if (video.auto_subtitles) {
+                    subStatus.innerHTML = `<i class="fas fa-robot"></i> Auto-generated subtitles available`;
+                } else {
+                    subStatus.innerHTML = `No subtitles uploaded`;
+                }
+                
+                document.getElementById('edit-thumbnail-preview').src = `${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}`;
+                
+                document.getElementById('edit-modal').style.display = 'flex';
+            } catch (e) {
+                alert("Error loading video details");
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').style.display = 'none';
+            document.getElementById('edit-video-form').reset();
+        }
+
+        function previewThumbnail(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('edit-thumbnail-preview').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        document.getElementById('edit-video-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const videoId = document.getElementById('edit-video-id').value;
+            const metadata = {
+                title: document.getElementById('edit-title').value,
+                description: document.getElementById('edit-description').value,
+                tags: document.getElementById('edit-tags').value,
+                hashtags: document.getElementById('edit-hashtags').value,
+                is_public: document.getElementById('edit-is-public').checked
+            };
+
+            try {
+                // Update metadata
+                await API.updateStudioVideo(videoId, metadata);
+                
+                // Update thumbnail if selected
+                const thumbInput = document.getElementById('edit-thumbnail-input');
+                if (thumbInput.files && thumbInput.files[0]) {
+                    await API.updateStudioThumbnail(videoId, thumbInput.files[0]);
+                }
+
+                // Update subtitles if selected
+                const subInput = document.getElementById('edit-subtitle-input');
+                if (subInput.files && subInput.files[0]) {
+                    await API.uploadSubtitles(videoId, subInput.files[0]);
+                }
+                
+                alert("Video updated successfully!");
+                closeEditModal();
+                loadDashboard();
+            } catch (err) {
+                alert("Error updating video");
+            }
+        });
 
         async function confirmDelete(videoId) {
             if (confirm("Are you sure you want to permanently delete this video? This action cannot be undone.")) {

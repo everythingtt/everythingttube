@@ -94,6 +94,39 @@ const API = {
         return await response.json();
     },
 
+    async getStudioVideo(videoId) {
+        const token = localStorage.getItem('ett_token');
+        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return await response.json();
+    },
+
+    async updateStudioVideo(videoId, metadata) {
+        const token = localStorage.getItem('ett_token');
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(metadata)) {
+            if (value !== undefined) params.append(key, value);
+        }
+        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}/update?${params.toString()}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return await response.json();
+    },
+
+    async updateStudioThumbnail(videoId, file) {
+        const token = localStorage.getItem('ett_token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}/thumbnail`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        return await response.json();
+    },
+
     async deleteVideo(videoId) {
         const token = localStorage.getItem('ett_token');
         const response = await fetch(`${CONFIG.API_URL}/studio/video/${videoId}`, {
