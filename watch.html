@@ -152,7 +152,6 @@
     <main style="margin-left: 0;">
         <div class="watch-container">
             <div class="player-section">
-                <div id="channel-banner-box" class="banner-container"></div>
                 <div class="video-player">
                     <video id="main-video" controls autoplay>
                         <source id="video-source" src="" type="video/mp4">
@@ -239,11 +238,6 @@
                     
                     if (video.owner_avatar) {
                         document.getElementById('creator-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${video.owner_avatar}`;
-                    }
-                    if (video.owner_banner) {
-                        const bannerBox = document.getElementById('channel-banner-box');
-                        bannerBox.style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${video.owner_banner}')`;
-                        bannerBox.style.display = 'block';
                     }
                     
                     const streamData = await (await fetch(`${CONFIG.API_URL}/video/stream/${videoId}`)).json();

@@ -159,6 +159,7 @@
             const xhr = new XMLHttpRequest();
             xhr.open('POST', `${CONFIG.UPLOAD_URL}/video/upload`, true);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+            xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable) {
