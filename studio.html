@@ -6,6 +6,7 @@
     <title>EverythingTTUBE Studio - Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .studio-grid {
             display: grid;
@@ -175,6 +176,13 @@
             font-size: 14px;
             color: var(--text-secondary);
         }
+        .tab-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -192,7 +200,8 @@
     <div class="sidebar">
         <a href="index.html"><i class="fas fa-arrow-left"></i> Back to TTUBE</a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
-        <a href="studio.html" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="#" id="menu-dashboard" class="active" onclick="switchTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="#" id="menu-content" onclick="switchTab('content')"><i class="fas fa-video"></i> Content</a>
         <a href="upload.html"><i class="fas fa-upload"></i> Upload Content</a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
         <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
@@ -210,42 +219,81 @@
             </div>
         </div>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h2 style="margin: 0;">Channel Dashboard</h2>
-            <button onclick="loadDashboard()" class="action-btn"><i class="fas fa-sync"></i> Refresh Data</button>
-        </div>
-        
-        <div class="studio-grid" id="analytics-summary">
-            <div class="stat-card">
-                <h3>Total Views</h3>
-                <div class="value" id="total-views">0</div>
+        <!-- Dashboard Tab -->
+        <div id="tab-dashboard" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0;">Channel Dashboard</h2>
+                <button onclick="loadDashboard()" class="action-btn"><i class="fas fa-sync"></i> Refresh Data</button>
             </div>
-            <div class="stat-card">
-                <h3>Total Videos</h3>
-                <div class="value" id="total-videos">0</div>
+            
+            <div class="studio-grid" id="analytics-summary">
+                <div class="stat-card">
+                    <h3>Total Views</h3>
+                    <div class="value" id="total-views">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Videos</h3>
+                    <div class="value" id="total-videos">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>ETT Tokens</h3>
+                    <div class="value" id="token-balance" style="color: #ffd700;">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg. Engagement</h3>
+                    <div class="value" id="engagement-rate">0%</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3>ETT Tokens</h3>
-                <div class="value" id="token-balance" style="color: #ffd700;">0</div>
+
+            <div class="studio-grid" style="grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div class="stat-card" style="text-align: left; height: 400px;">
+                    <h3>Views (Last 7 Days)</h3>
+                    <canvas id="viewsChart"></canvas>
+                </div>
+                <div class="stat-card" style="text-align: left;">
+                    <h3>Top Performing Videos</h3>
+                    <div id="top-videos-list" style="margin-top: 16px;">
+                        <!-- Top videos will be here -->
+                    </div>
+                </div>
             </div>
         </div>
 
-        <h3 style="margin-bottom: 16px;">Content Manager</h3>
-        <div class="video-manager">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Video</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Views</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="creator-video-list">
-                    <!-- Videos will be populated here -->
-                </tbody>
-            </table>
+        <!-- Content Manager Tab -->
+        <div id="tab-content" class="tab-content" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0;">Content Manager</h3>
+                <div class="content-filters" style="display: flex; gap: 12px;">
+                    <input type="text" id="video-search" placeholder="Search your videos..." oninput="filterVideos()" style="background: #121212; border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 4px; font-size: 14px; width: 250px;">
+                    <select id="status-filter" onchange="filterVideos()" style="background: #121212; border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 4px; font-size: 14px;">
+                        <option value="all">All Status</option>
+                        <option value="ready">Ready</option>
+                        <option value="processing">Processing</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                    <select id="visibility-filter" onchange="filterVideos()" style="background: #121212; border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 4px; font-size: 14px;">
+                        <option value="all">All Visibility</option>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                </div>
+            </div>
+            <div class="video-manager">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Video</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Views</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creator-video-list">
+                        <!-- Videos will be populated here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </main>
 
@@ -311,13 +359,30 @@
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script>
-        async function loadDashboard() {
-            try {
-                const analytics = await API.getStudioAnalytics();
-                document.getElementById('total-views').textContent = analytics.total_views.toLocaleString();
-                document.getElementById('total-videos').textContent = analytics.total_videos;
-                document.getElementById('token-balance').textContent = analytics.token_balance.toFixed(1);
+        let allVideos = []; // Local cache for filtering
+        let viewsChart = null;
 
+        function switchTab(tabName) {
+            // Update menu
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`menu-${tabName}`).classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            document.getElementById(`tab-${tabName}`).style.display = 'block';
+        }
+
+        async function loadDashboard() {
+            // Load all parts independently so one failure doesn't block others
+            await Promise.all([
+                loadUserStats(),
+                loadAnalytics(),
+                loadVideosList()
+            ]);
+        }
+
+        async function loadUserStats() {
+            try {
                 const user = await API.getMe();
                 if (user) {
                     document.getElementById('studio-username').textContent = user.username;
@@ -327,45 +392,173 @@
                     document.getElementById('studio-avatar-img').onclick = () => location.href = `channel.html?u=${user.username}`;
                     
                     document.getElementById('studio-role').textContent = user.role.toUpperCase();
+                    
+                    // Add bypass param to user images
+                    const bypass = "?ngrok-skip-browser-warning=any";
                     if (user.avatar) {
-                        document.getElementById('studio-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                        document.getElementById('studio-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}${bypass}`;
                     }
                     if (user.banner) {
-                        document.getElementById('studio-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}')`;
+                        document.getElementById('studio-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}${bypass}')`;
+                    }
+                    
+                    // Basic stats from user object
+                    document.getElementById('token-balance').textContent = (user.ett_tokens || 0).toFixed(1);
+                }
+            } catch (e) {
+                console.error("User stats load error", e);
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const analytics = await API.getStudioAnalytics();
+                if (analytics) {
+                    document.getElementById('total-views').textContent = (analytics.total_views || 0).toLocaleString();
+                    document.getElementById('total-videos').textContent = analytics.total_videos || 0;
+                    document.getElementById('engagement-rate').textContent = `${analytics.engagement_rate || 0}%`;
+
+                    // Render Top Videos
+                    const topList = document.getElementById('top-videos-list');
+                    if (analytics.top_videos && analytics.top_videos.length > 0) {
+                        topList.innerHTML = analytics.top_videos.map(v => `
+                            <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center; cursor: pointer;" onclick="openEditModal(${v.id})">
+                                <img src="${API.getServiceUrl('api')}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" style="width: 60px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" alt="${API.escapeHTML(v.title)}">
+                                <div style="flex: 1; overflow: hidden;">
+                                    <div style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${API.escapeHTML(v.title)}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${(v.views || 0).toLocaleString()} views</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        topList.innerHTML = '<p style="color: var(--text-secondary);">No data yet.</p>';
+                    }
+
+                    // Render Chart
+                    if (analytics.daily_views && analytics.daily_views.length > 0) {
+                        renderViewsChart(analytics.daily_views);
                     }
                 }
-
-                const videos = await API.getStudioVideos();
-                const videoList = document.getElementById('creator-video-list');
-                
-                if (videos.length === 0) {
-                    videoList.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No videos uploaded yet.</td></tr>';
-                    return;
-                }
-
-                videoList.innerHTML = videos.map(video => `
-                    <tr>
-                        <td style="display: flex; gap: 12px; align-items: center;">
-                            <img src="${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" style="width: 100px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;">
-                            <div>
-                                <div style="font-weight: bold;">${video.title}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${video.description || ''}</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="status-badge status-${video.status}">${video.status.toUpperCase()}</span>
-                        </td>
-                        <td>${new Date(video.created_at).toLocaleDateString()}</td>
-                        <td>${video.views}</td>
-                        <td>
-                            <i class="fas fa-edit action-icon" title="Edit Metadata" onclick="openEditModal(${video.id})"></i>
-                            <i class="fas fa-trash action-icon delete-icon" onclick="confirmDelete(${video.id})" title="Delete Video"></i>
-                        </td>
-                    </tr>
-                `).join('');
             } catch (error) {
-                console.error("Studio error:", error);
+                console.error("Analytics load error:", error);
             }
+        }
+
+        async function loadVideosList() {
+            try {
+                allVideos = await API.getStudioVideos();
+                renderVideos(allVideos);
+            } catch (e) {
+                console.error("Videos list load error", e);
+                document.getElementById('creator-video-list').innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--primary-color);">Error loading videos.</td></tr>';
+            }
+        }
+
+        function filterVideos() {
+            const query = document.getElementById('video-search').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            const visibilityFilter = document.getElementById('visibility-filter').value;
+
+            const filtered = allVideos.filter(video => {
+                const matchesSearch = video.title.toLowerCase().includes(query) || 
+                                     (video.description && video.description.toLowerCase().includes(query));
+                const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
+                const matchesVisibility = visibilityFilter === 'all' || 
+                                         (visibilityFilter === 'public' ? video.is_public : !video.is_public);
+                
+                return matchesSearch && matchesStatus && matchesVisibility;
+            });
+
+            renderVideos(filtered);
+        }
+
+        function renderVideos(videos) {
+            const videoList = document.getElementById('creator-video-list');
+            
+            if (!videos || videos.length === 0) {
+                videoList.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No videos found.</td></tr>';
+                return;
+            }
+
+            const bypass = "?ngrok-skip-browser-warning=any";
+
+            videoList.innerHTML = videos.map(video => {
+                const status = (video.status || 'ready').toUpperCase();
+                const thumbnail = video.thumbnail || 'default.jpg';
+                const title = API.escapeHTML(video.title) || 'Untitled';
+                const description = API.escapeHTML(video.description) || '';
+                const createdDate = video.created_at ? new Date(video.created_at).toLocaleDateString() : 'N/A';
+                const views = video.views || 0;
+                const isPublic = video.is_public !== false;
+
+                return `
+                <tr>
+                    <td style="display: flex; gap: 12px; align-items: center;">
+                        <img src="${API.getServiceUrl('api')}/storage/thumbnails/${thumbnail}${bypass}" style="width: 100px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/100x56'">
+                        <div>
+                            <div style="font-weight: bold;">${title}</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${description}</div>
+                            <div style="font-size: 11px; margin-top: 4px; color: ${isPublic ? '#4caf50' : '#f44336'}">
+                                <i class="fas fa-${isPublic ? 'globe' : 'lock'}"></i> ${isPublic ? 'Public' : 'Private'}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-${(video.status || 'ready').toLowerCase()}">${status}</span>
+                    </td>
+                    <td>${createdDate}</td>
+                    <td>${views}</td>
+                    <td>
+                        <i class="fas fa-edit action-icon" title="Edit Metadata" onclick="openEditModal(${video.id})"></i>
+                        <i class="fas fa-trash action-icon delete-icon" onclick="confirmDelete(${video.id})" title="Delete Video"></i>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        function renderViewsChart(dailyViews) {
+            const ctx = document.getElementById('viewsChart').getContext('2d');
+            
+            if (viewsChart) {
+                viewsChart.destroy();
+            }
+
+            viewsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dailyViews.map(d => new Date(d.date).toLocaleDateString(undefined, {weekday: 'short'})),
+                    datasets: [{
+                        label: 'Views',
+                        data: dailyViews.map(d => d.views),
+                        borderColor: '#ff0000',
+                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#ff0000'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#aaa', stepSize: 1 }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#aaa' }
+                        }
+                    }
+                }
+            });
         }
 
         async function openEditModal(videoId) {
@@ -468,7 +661,8 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await DISCOVERY_PROMISE;
             checkLogin();
             loadDashboard();
         });

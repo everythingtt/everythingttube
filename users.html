@@ -102,8 +102,8 @@
                 container.innerHTML = users.map(u => `
                     <tr>
                         <td>#${u.id}</td>
-                        <td>${u.username}</td>
-                        <td>${u.email}</td>
+                        <td>${API.escapeHTML(u.username)}</td>
+                        <td>${API.escapeHTML(u.email)}</td>
                         <td><span class="role-badge role-${u.role}">${u.role}</span></td>
                         <td>${u.ett_tokens.toFixed(2)} ETT</td>
                         <td class="action-group">
@@ -151,7 +151,7 @@
                     return;
                 }
                 userInfo.innerHTML = `
-                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <span style="color: white; margin-right: 15px;">Admin: ${API.escapeHTML(user.username)}</span>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
                 `;
             } else {

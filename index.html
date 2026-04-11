@@ -21,6 +21,15 @@
                 <!-- Logged in info will be here -->
                 <a href="auth.html" id="login-link" class="login-link">Sign In</a>
             </div>
+            <div id="notification-dropdown" style="display: none; position: absolute; top: 60px; right: 20px; width: 300px; background: #222; border: 1px solid var(--border-color); border-radius: 8px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <div style="padding: 12px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="margin: 0;">Notifications</h4>
+                    <span onclick="markAllRead()" style="font-size: 12px; color: var(--primary-color); cursor: pointer;">Mark all read</span>
+                </div>
+                <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Notifs here -->
+                </div>
+            </div>
         </div>
     </header>
 
@@ -39,6 +48,15 @@
     </div>
 
     <main>
+        <div id="continue-watching-section" style="display: none; margin-bottom: 40px;">
+            <h2 style="margin-bottom: 20px;"><i class="fas fa-history"></i> Continue Watching</h2>
+            <div id="history-list" class="video-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                <!-- History items will be populated here -->
+            </div>
+            <hr style="margin-top: 40px; border: 0; border-top: 1px solid var(--border-color);">
+        </div>
+
+        <h2 id="browse-title" style="margin-bottom: 20px;">Browse Videos</h2>
         <div id="video-list" class="video-grid">
             <!-- Videos will be populated here -->
         </div>
@@ -49,6 +67,16 @@
     <script>
         async function loadVideos(query = null) {
             const videoList = document.getElementById('video-list');
+            const browseTitle = document.getElementById('browse-title');
+            
+            if (query) {
+                browseTitle.textContent = `Search results for "${query}"`;
+                document.getElementById('continue-watching-section').style.display = 'none';
+            } else {
+                browseTitle.textContent = 'Browse Videos';
+                loadHistory(); 
+            }
+
             try {
                 const videos = query ? await API.searchVideos(query) : await API.listVideos();
                 if (videos.length === 0) {
@@ -57,13 +85,13 @@
                 }
                 videoList.innerHTML = videos.map(video => `
                     <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
-                        <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${video.title}">
+                        <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(video.title)}">
                         <div class="video-info">
                             <div class="video-meta-top">
-                                <img class="owner-avatar-small" src="${video.owner_avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + video.owner_avatar : 'https://via.placeholder.com/36'}" alt="${video.owner_name}" onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer;">
+                                <img class="owner-avatar-small" src="${video.owner_avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + video.owner_avatar : 'https://via.placeholder.com/36'}" alt="${API.escapeHTML(video.owner_name)}" onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer;">
                                  <div>
-                                     <h3>${video.title}</h3>
-                                     <p onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer; display: inline-block;">${video.owner_name}</p>
+                                     <h3>${API.escapeHTML(video.title)}</h3>
+                                     <p onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer; display: inline-block;">${API.escapeHTML(video.owner_name)}</p>
                                      <p>${video.views} views • ${new Date(video.created_at).toLocaleDateString()}</p>
                                  </div>
                             </div>
@@ -76,18 +104,105 @@
             }
         }
 
+        async function loadHistory() {
+            const historyList = document.getElementById('history-list');
+            const historySection = document.getElementById('continue-watching-section');
+            
+            try {
+                const history = await API.getHistory();
+                if (!history || history.length === 0) {
+                    historySection.style.display = 'none';
+                    return;
+                }
+
+                historySection.style.display = 'block';
+                // Only show top 4 for the home page row
+                const topHistory = history.slice(0, 4);
+                
+                historyList.innerHTML = topHistory.map(item => {
+                    const progress = (item.last_position / item.duration) * 100;
+                    return `
+                        <div class="video-card small" onclick="location.href='watch.html?id=${item.video_id}'">
+                            <div style="position: relative;">
+                                <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${item.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(item.title)}">
+                                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2);">
+                                    <div style="width: ${progress}%; height: 100%; background: var(--primary-color);"></div>
+                                </div>
+                            </div>
+                            <div class="video-info" style="padding: 8px 0;">
+                                <h3 style="font-size: 14px; margin-bottom: 4px;">${API.escapeHTML(item.title)}</h3>
+                                <p style="font-size: 12px;">${API.escapeHTML(item.owner_name)}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.warn("History not available (probably not logged in)");
+                historySection.style.display = 'none';
+            }
+        }
+
+        function toggleNotifs() {
+            const dropdown = document.getElementById('notification-dropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function loadNotifications() {
+            const list = document.getElementById('notification-list');
+            const countBadge = document.getElementById('notif-count');
+            try {
+                const notifs = await API.getNotifications();
+                const unread = notifs.filter(n => !n.is_read).length;
+                
+                if (unread > 0) {
+                    countBadge.textContent = unread;
+                    countBadge.style.display = 'block';
+                } else {
+                    countBadge.style.display = 'none';
+                }
+
+                if (notifs.length === 0) {
+                    list.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-secondary);">No notifications.</p>';
+                    return;
+                }
+
+                list.innerHTML = notifs.map(n => `
+                    <div style="padding: 12px; border-bottom: 1px solid #333; background: ${n.is_read ? 'transparent' : 'rgba(255,0,0,0.05)'}; cursor: pointer;" onclick="handleNotifClick(${n.id}, '${n.link}')">
+                        <div style="font-size: 13px; margin-bottom: 4px;">${API.escapeHTML(n.message)}</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">${new Date(n.created_at).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            } catch (e) { console.warn("Error loading notifs", e); }
+        }
+
+        async function handleNotifClick(id, link) {
+            await API.markNotificationRead(id);
+            if (link) location.href = link;
+            else loadNotifications();
+        }
+
+        async function markAllRead() {
+            await API.markAllNotificationsRead();
+            loadNotifications();
+        }
+
         async function checkLogin() {
             const user = await API.getMe();
             const userInfo = document.getElementById('user-info');
             if (user && user.id) {
                 userInfo.innerHTML = `
+                    <div id="notif-bell" style="position: relative; margin-right: 20px; cursor: pointer; font-size: 20px;" onclick="toggleNotifs()">
+                        <i class="fas fa-bell"></i>
+                        <span id="notif-count" style="display: none; position: absolute; top: -5px; right: -5px; background: var(--primary-color); color: white; font-size: 10px; padding: 2px 5px; border-radius: 50%;">0</span>
+                    </div>
                     <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
-                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${API.escapeHTML(user.username)}</a>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
                 `;
                 if (user.role === 'admin') {
                     document.getElementById('admin-nav').style.display = 'block';
                 }
+                loadNotifications();
             }
         }
 
@@ -100,7 +215,8 @@
             if (e.key === 'Enter') loadVideos(e.target.value);
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await DISCOVERY_PROMISE;
             loadVideos();
             checkLogin();
         });

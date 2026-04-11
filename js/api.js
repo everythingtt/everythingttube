@@ -7,21 +7,92 @@ const API = {
             'ngrok-skip-browser-warning': 'any',
             ...extraHeaders
         };
-        const token = localStorage.getItem('ett_token');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        
+        // 1. Attach Access Token (Bearer) if available in localStorage
+        const accessToken = localStorage.getItem('ett_token');
+        if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`;
         }
+
+        // 2. Attach CSRF token
+        // Priority: localStorage (fallback) -> Cookie (primary)
+        const csrfToken = this.getCookie('ett_csrf') || localStorage.getItem('ett_csrf');
+        if (csrfToken) {
+            headers['X-CSRF-Token'] = csrfToken;
+        }
+
         return headers;
+    },
+
+    // Helper to read cookies
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
     },
 
     // Global fetch wrapper
     async fetch(url, options = {}) {
-        options.headers = this.getHeaders(options.headers || {});
-        const response = await fetch(url, options);
-        if (response.status === 401) {
-            this.logout();
+        // Append ngrok bypass query parameter to ALL ngrok requests
+        if (url.includes('ngrok-free.dev')) {
+            const urlObj = new URL(url);
+            urlObj.searchParams.set('ngrok-skip-browser-warning', 'any');
+            url = urlObj.toString();
         }
-        return response;
+
+        options.headers = this.getHeaders(options.headers || {});
+        
+        // CRITICAL: Include credentials (cookies) for all requests
+        options.credentials = 'include';
+
+        try {
+            const response = await fetch(url, options);
+            if (response.status === 401) {
+                // If unauthorized, redirect to login unless we are already there
+                if (!window.location.href.includes('auth.html')) {
+                    this.logout();
+                }
+            }
+            return response;
+        } catch (error) {
+            console.error(`Fetch failed for ${url}:`, error);
+            this.handleNetworkError(url, error);
+            throw error;
+        }
+    },
+
+    // XSS Protection: Escape HTML characters
+    escapeHTML(str) {
+        if (!str) return "";
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[m];
+        });
+    },
+
+    handleNetworkError(url, error) {
+        // Simple alert for now, can be improved with a toast or status bar
+        const isNgrok = url.includes('ngrok-free.dev');
+        if (isNgrok) {
+            console.warn("Ngrok tunnel appears to be offline or failing. Check your tunnel status.");
+        }
+    },
+
+    getServiceUrl(service) {
+        switch (service) {
+            case 'api': return CONFIG.API_URL;
+            case 'auth': return CONFIG.AUTH_URL;
+            case 'stream': return CONFIG.STREAM_URL;
+            case 'upload': return CONFIG.UPLOAD_URL;
+            case 'admin': return CONFIG.ADMIN_URL;
+            default: return CONFIG.API_URL;
+        }
     },
 
     // Auth
@@ -31,9 +102,14 @@ const API = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
+        
         const data = await response.json();
-        if (response.ok) {
+        if (response.ok && data.access_token) {
+            // Store tokens in localStorage as an emergency fallback for cross-domain cookie issues
             localStorage.setItem('ett_token', data.access_token);
+            if (data.csrf_token) {
+                localStorage.setItem('ett_csrf', data.csrf_token);
+            }
         }
         return data;
     },
@@ -44,18 +120,32 @@ const API = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, username, password })
         });
-        return await response.json();
+        
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem('ett_token', data.access_token);
+            if (data.csrf_token) {
+                localStorage.setItem('ett_csrf', data.csrf_token);
+            }
+        }
+        return data;
     },
 
     async getMe() {
-        const token = localStorage.getItem('ett_token');
-        if (!token) return null;
-        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/me?token=${token}`);
+        const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/me`);
+        if (!response.ok) return null;
         return await response.json();
     },
 
-    logout() {
+    async logout() {
+        try {
+            await this.fetch(`${CONFIG.AUTH_URL}/auth/logout`, { method: 'POST' });
+        } catch (e) {
+            console.warn("Logout request failed", e);
+        }
+        // Clear tokens from localStorage
         localStorage.removeItem('ett_token');
+        localStorage.removeItem('ett_csrf');
         window.location.href = 'auth.html';
     },
 
@@ -65,8 +155,12 @@ const API = {
         return await response.json();
     },
 
-    async searchVideos(query) {
-        const response = await this.fetch(`${CONFIG.API_URL}/video/search?q=${encodeURIComponent(query)}`);
+    async searchVideos(query, quality = null, sort = 'newest') {
+        const params = new URLSearchParams();
+        if (query) params.append('q', query);
+        if (quality) params.append('quality', quality);
+        if (sort) params.append('sort', sort);
+        const response = await this.fetch(`${CONFIG.API_URL}/video/search?${params.toString()}`);
         return await response.json();
     },
 
@@ -119,12 +213,15 @@ const API = {
     },
 
     async updateStudioVideo(videoId, metadata) {
-        const params = new URLSearchParams();
+        const formData = new FormData();
         for (const [key, value] of Object.entries(metadata)) {
-            if (value !== undefined) params.append(key, value);
+            if (value !== undefined && value !== null) {
+                formData.append(key, value);
+            }
         }
-        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}/update?${params.toString()}`, {
-            method: 'POST'
+        const response = await this.fetch(`${CONFIG.API_URL}/studio/video/${videoId}/update`, {
+            method: 'POST',
+            body: formData
         });
         return await response.json();
     },
@@ -194,6 +291,108 @@ const API = {
 
     async takeModAction(reportId, action) {
         const response = await this.fetch(`${CONFIG.ADMIN_URL}/moderation/admin/action/${reportId}?action=${action}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    // Engagement
+    async postComment(videoId, content) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/comment/${videoId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+        return await response.json();
+    },
+
+    async getComments(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/comments/${videoId}`);
+        return await response.json();
+    },
+
+    async toggleLike(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/like/${videoId}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    async toggleSubscribe(creatorId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/subscribe/${creatorId}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    async recordView(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/view/${videoId}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    async getEngagementStats(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/stats/${videoId}`);
+        return await response.json();
+    },
+
+    // History
+    async updateHistory(videoId, position) {
+        const response = await this.fetch(`${CONFIG.API_URL}/history/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: videoId, position: Math.floor(position) })
+        });
+        return await response.json();
+    },
+
+    async getHistory() {
+        const response = await this.fetch(`${CONFIG.API_URL}/history/list`);
+        return await response.json();
+    },
+
+    async getResumePoint(videoId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/history/resume/${videoId}`);
+        return await response.json();
+    },
+
+    // Community
+    async createCommunityPost(formData) {
+        const response = await this.fetch(`${CONFIG.API_URL}/community/post`, {
+            method: 'POST',
+            body: formData
+        });
+        return await response.json();
+    },
+
+    async getChannelPosts(username) {
+        const response = await this.fetch(`${CONFIG.API_URL}/community/channel/${username}`);
+        return await response.json();
+    },
+
+    async likeCommunityPost(postId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/community/like/${postId}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    // Notifications
+    async getNotifications() {
+        const response = await this.fetch(`${CONFIG.API_URL}/notifications/`);
+        return await response.json();
+    },
+
+    async markNotificationRead(notifId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/notifications/read/${notifId}`, {
+            method: 'POST'
+        });
+        return await response.json();
+    },
+
+    async markAllNotificationsRead() {
+        const response = await this.fetch(`${CONFIG.API_URL}/notifications/read-all`, {
             method: 'POST'
         });
         return await response.json();

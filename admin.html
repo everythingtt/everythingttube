@@ -108,7 +108,7 @@
                     <tr>
                         <td>#${r.video_id}</td>
                         <td>User #${r.reporter_id}</td>
-                        <td><span class="reason-badge">${r.reason}</span></td>
+                        <td><span class="reason-badge">${API.escapeHTML(r.reason)}</span></td>
                         <td>${new Date(r.created_at).toLocaleDateString()}</td>
                         <td class="action-btn-group">
                             <button class="btn-remove" onclick="modAction(${r.id}, 'remove')">Remove</button>
@@ -139,7 +139,7 @@
                     return;
                 }
                 userInfo.innerHTML = `
-                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <span style="color: white; margin-right: 15px;">Admin: ${API.escapeHTML(user.username)}</span>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
                 `;
             } else {

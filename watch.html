@@ -23,9 +23,165 @@
             border-radius: 12px;
             overflow: hidden;
             margin-bottom: 16px;
+            position: relative;
+            aspect-ratio: 16/9;
         }
         .video-player video {
             width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* Custom Player Controls */
+        .player-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 10px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        .video-player:hover .player-controls {
+            opacity: 1;
+        }
+        .controls-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            cursor: pointer;
+            position: relative;
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+        .progress-container:hover {
+            height: 6px;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            border-radius: inherit;
+            position: relative;
+        }
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: none;
+        }
+        .progress-container:hover .progress-bar::after {
+            display: block;
+        }
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+        .control-btn:hover {
+            transform: scale(1.1);
+        }
+        .time-display {
+            font-size: 13px;
+            font-family: monospace;
+            min-width: 100px;
+        }
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100px;
+        }
+        .volume-slider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+        }
+        .settings-menu {
+            position: relative;
+        }
+        .settings-dropdown {
+            position: absolute;
+            bottom: 40px;
+            right: 0;
+            background: rgba(28,28,28,0.9);
+            border-radius: 8px;
+            padding: 10px 0;
+            min-width: 150px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .settings-dropdown.active {
+            display: block;
+        }
+        .setting-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .setting-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .fullscreen-btn {
+            margin-left: auto;
+        }
+        
+        /* Buffering Spinner */
+        .player-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            z-index: 10;
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .video-player.buffering .player-loader {
             display: block;
         }
         .video-details {
@@ -152,12 +308,69 @@
     <main style="margin-left: 0;">
         <div class="watch-container">
             <div class="player-section">
-                <div class="video-player">
-                    <video id="main-video" controls autoplay>
+                <div class="video-player" id="player-container">
+                    <video id="main-video" autoplay>
                         <source id="video-source" src="" type="video/mp4">
-                        <!-- Tracks will be added dynamically -->
                         Your browser does not support the video tag.
                     </video>
+                    
+                    <div class="player-loader"></div>
+                    
+                    <!-- Custom Controls Overlay -->
+                    <div class="player-controls">
+                        <!-- Progress Bar -->
+                        <div class="progress-container" id="progress-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                        
+                        <div class="controls-row">
+                            <!-- Play/Pause -->
+                            <button class="control-btn" id="backward-btn" title="Back 10s">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                            <button class="control-btn" id="play-pause-btn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="control-btn" id="forward-btn" title="Forward 10s">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            
+                            <!-- Volume -->
+                            <div class="volume-container">
+                                <button class="control-btn" id="mute-btn">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                                <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.1" value="1">
+                            </div>
+                            
+                            <!-- Time -->
+                            <div class="time-display">
+                                <span id="current-time">0:00</span> / <span id="duration">0:00</span>
+                            </div>
+                            
+                            <!-- Settings (Quality/Speed) -->
+                            <div class="settings-menu">
+                                <button class="control-btn" id="settings-btn">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <div class="settings-dropdown" id="settings-dropdown">
+                                    <div class="setting-item" onclick="setPlaybackSpeed(0.5)">Speed: 0.5x</div>
+                                    <div class="setting-item" onclick="setPlaybackSpeed(1)">Speed: Normal</div>
+                                    <div class="setting-item" onclick="setPlaybackSpeed(1.5)">Speed: 1.5x</div>
+                                    <div class="setting-item" onclick="setPlaybackSpeed(2)">Speed: 2x</div>
+                                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
+                                    <div id="quality-levels">
+                                        <!-- Quality levels will be populated by HLS.js -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Fullscreen -->
+                            <button class="control-btn fullscreen-btn" id="fullscreen-btn">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="video-details">
                     <div id="video-hashtags" style="color: #3ea6ff; font-size: 12px; margin-bottom: 4px;"></div>
@@ -168,8 +381,8 @@
                     <div class="video-meta">
                         <span id="video-views">... views • ...</span>
                         <div class="action-buttons">
-                            <button class="action-btn" onclick="earnEngagement()"><i class="fas fa-thumbs-up"></i> Like</button>
-                            <button class="action-btn"><i class="fas fa-share"></i> Share</button>
+                            <button id="like-btn" class="action-btn" onclick="toggleLike()"><i class="fas fa-thumbs-up"></i> <span>Like</span></button>
+                            <button class="action-btn" onclick="shareVideo()"><i class="fas fa-share"></i> Share</button>
                             <button class="action-btn" onclick="reportVideo()"><i class="fas fa-flag"></i> Report</button>
                         </div>
                     </div>
@@ -178,12 +391,32 @@
                     <img id="creator-avatar" src="https://via.placeholder.com/40" class="creator-avatar" alt="Avatar" style="cursor: pointer;">
                     <div class="creator-details">
                         <h3 id="creator-name" style="cursor: pointer;">Creator</h3>
-                        <p id="creator-status">Verified</p>
+                        <p id="creator-sub-count">0 subscribers</p>
                     </div>
-                    <button class="action-btn" style="margin-left: auto; background: white; color: black; font-weight: bold;">Subscribe</button>
+                    <button id="subscribe-btn" class="action-btn" style="margin-left: auto; background: white; color: black; font-weight: bold;" onclick="toggleSubscribe()">Subscribe</button>
                 </div>
                 <div id="video-description" class="video-description-box">
                     <!-- Description will be populated here -->
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section" style="margin-top: 32px;">
+                    <h3 id="comments-count">0 Comments</h3>
+                    
+                    <div id="comment-input-container" class="comment-input-area" style="display: flex; gap: 12px; margin: 24px 0;">
+                        <img id="my-avatar" src="https://via.placeholder.com/40" class="creator-avatar" alt="My Avatar">
+                        <div style="flex: 1;">
+                            <textarea id="comment-text" placeholder="Add a comment..." style="width: 100%; background: none; border: none; border-bottom: 1px solid var(--border-color); color: white; padding: 8px 0; margin-bottom: 8px; resize: none;"></textarea>
+                            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                                <button class="action-btn" onclick="cancelComment()">Cancel</button>
+                                <button class="primary-btn" id="post-comment-btn" onclick="postComment()" style="padding: 8px 16px;">Comment</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="comments-list" class="comments-list">
+                        <!-- Comments will be populated here -->
+                    </div>
                 </div>
             </div>
             <div class="recommendations" id="recommendations-list">
@@ -198,6 +431,167 @@
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('id');
 
+        let currentVideoOwnerId = null;
+        let hlsInstance = null;
+
+        // Custom Player Controls Logic
+        const player = document.getElementById('main-video');
+        const playerContainer = document.getElementById('player-container');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const muteBtn = document.getElementById('mute-btn');
+        const volumeSlider = document.getElementById('volume-slider');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const durationDisplay = document.getElementById('duration');
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsDropdown = document.getElementById('settings-dropdown');
+
+        function togglePlay() {
+            if (player.paused) {
+                player.play();
+                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                player.pause();
+                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        }
+
+        function updateProgress() {
+            const percent = (player.currentTime / player.duration) * 100;
+            progressBar.style.width = `${percent}%`;
+            currentTimeDisplay.textContent = formatTime(player.currentTime);
+        }
+
+        function scrub(e) {
+            const scrubTime = (e.offsetX / progressContainer.offsetWidth) * player.duration;
+            player.currentTime = scrubTime;
+        }
+
+        function formatTime(time) {
+            if (isNaN(time)) return "0:00";
+            const minutes = Math.floor(time / 60);
+            const seconds = Math.floor(time % 60);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function toggleMute() {
+            player.muted = !player.muted;
+            muteBtn.innerHTML = player.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            volumeSlider.value = player.muted ? 0 : player.volume;
+        }
+
+        function handleVolume() {
+            player.volume = volumeSlider.value;
+            player.muted = player.volume === 0;
+            muteBtn.innerHTML = player.volume === 0 ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                playerContainer.requestFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        }
+
+        function setPlaybackSpeed(speed) {
+            player.playbackRate = speed;
+            settingsDropdown.classList.remove('active');
+        }
+
+        function setQuality(index) {
+            if (hlsInstance) {
+                hlsInstance.currentLevel = index;
+            }
+            settingsDropdown.classList.remove('active');
+        }
+
+        // Event Listeners
+        playPauseBtn.addEventListener('click', togglePlay);
+        document.getElementById('backward-btn').addEventListener('click', () => player.currentTime -= 10);
+        document.getElementById('forward-btn').addEventListener('click', () => player.currentTime += 10);
+        player.addEventListener('click', togglePlay);
+        player.addEventListener('timeupdate', updateProgress);
+        player.addEventListener('loadedmetadata', () => {
+            durationDisplay.textContent = formatTime(player.duration);
+        });
+        
+        progressContainer.addEventListener('click', scrub);
+        muteBtn.addEventListener('click', toggleMute);
+        volumeSlider.addEventListener('input', handleVolume);
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        playerContainer.addEventListener('dblclick', toggleFullscreen);
+        settingsBtn.addEventListener('click', () => settingsDropdown.classList.toggle('active'));
+
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!settingsBtn.contains(e.target) && !settingsDropdown.contains(e.target)) {
+                settingsDropdown.classList.remove('active');
+            }
+        });
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            // Don't trigger if user is typing in a comment or search box
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'f':
+                    toggleFullscreen();
+                    break;
+                case 'm':
+                    toggleMute();
+                    break;
+                case 'k':
+                    togglePlay();
+                    break;
+                case 'arrowleft':
+                    player.currentTime -= 10;
+                    break;
+                case 'arrowright':
+                    player.currentTime += 10;
+                    break;
+                case 'l':
+                    player.currentTime += 10;
+                    break;
+                case 'j':
+                    player.currentTime -= 10;
+                    break;
+            }
+        });
+
+        // Auto-hide controls
+        let timeout;
+        playerContainer.addEventListener('mousemove', () => {
+            document.querySelector('.player-controls').style.opacity = '1';
+            playerContainer.style.cursor = 'default';
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (!player.paused) {
+                    document.querySelector('.player-controls').style.opacity = '0';
+                    playerContainer.style.cursor = 'none';
+                }
+            }, 3000);
+        });
+
+        player.addEventListener('ended', () => {
+            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+            document.querySelector('.player-controls').style.opacity = '1';
+        });
+
+        // Buffering detection
+        player.addEventListener('waiting', () => playerContainer.classList.add('buffering'));
+        player.addEventListener('playing', () => playerContainer.classList.remove('buffering'));
+        player.addEventListener('canplay', () => playerContainer.classList.remove('buffering'));
+
         async function loadVideoDetails() {
             if (!videoId) {
                 location.href = 'index.html';
@@ -205,14 +599,22 @@
             }
 
             try {
+                // Record view first
+                await API.recordView(videoId);
+
                 // In a real app, we'd have a getVideoById endpoint
                 // For now, let's just fetch all and filter
                 const videos = await API.listVideos();
                 const video = videos.find(v => v.id == videoId);
 
                 if (video) {
+                    currentVideoOwnerId = video.owner_id;
                     document.getElementById('video-title').textContent = video.title;
-                    document.getElementById('video-views').textContent = `${video.views} views • ${new Date(video.created_at).toLocaleDateString()}`;
+                    
+                    // Meta tags for OpenGraph (Dynamic generation isn't possible on static GitHub Pages, 
+                    // but we can set them for potential SPA crawlers or future SSR)
+                    document.title = `${video.title} - EverythingTTUBE`;
+                    
                     document.getElementById('video-description').textContent = video.description || 'No description provided.';
                     
                     // Populate Quality Badge
@@ -228,7 +630,7 @@
 
                     // Populate hashtags
                     if (video.hashtags) {
-                        document.getElementById('video-hashtags').textContent = video.hashtags;
+                        document.getElementById('video-hashtags').textContent = API.escapeHTML(video.hashtags);
                     }
 
                     // Populate Creator Info
@@ -243,8 +645,7 @@
                     const streamData = await API.getVideoStream(videoId);
                     const videoElement = document.getElementById('main-video');
                     
-                    const streamBaseUrl = streamData.type === 'hls' ? CONFIG.STREAM_URL : CONFIG.API_URL;
-                    const fullStreamUrl = `${streamBaseUrl}${streamData.url}`;
+                    const fullStreamUrl = API.getResourceUrl(streamData.type === 'hls' ? 'stream' : 'api', streamData.url);
 
                     // Handle Subtitles
                     // 1. Manual Subtitles
@@ -280,23 +681,93 @@
 
                     if (streamData.type === 'hls') {
                         if (Hls.isSupported()) {
-                            const hls = new Hls({
+                            hlsInstance = new Hls({
                                 xhrSetup: function (xhr, url) {
+                                    // For fragments and playlists, ensure the bypass header is sent
                                     xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
+                                    // Also include credentials for session-based access if needed
+                                    xhr.withCredentials = true;
                                 }
                             });
-                            hls.loadSource(fullStreamUrl);
-                            hls.attachMedia(videoElement);
-                        } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-                            // Native support (Safari) - hard to set headers here, but hopefully HLS is handled
-                            videoElement.src = fullStreamUrl;
+                            hlsInstance.loadSource(fullStreamUrl);
+                            hlsInstance.attachMedia(player);
+                            
+                            // Handle Quality Levels
+                            hlsInstance.on(Hls.Events.MANIFEST_PARSED, async () => {
+                                const qualityLevels = hlsInstance.levels;
+                                const qualityContainer = document.getElementById('quality-levels');
+                                qualityContainer.innerHTML = '<div class="setting-item" onclick="setQuality(-1)">Quality: Auto</div>';
+                                
+                                qualityLevels.forEach((level, index) => {
+                                    qualityContainer.innerHTML += `
+                                        <div class="setting-item" onclick="setQuality(${index})">
+                                            Quality: ${level.height}p
+                                        </div>
+                                    `;
+                                });
+
+                                // Check for resume point
+                                const resume = await API.getResumePoint(videoId);
+                                if (resume && resume.position > 0) {
+                                    player.currentTime = resume.position;
+                                    console.log(`Resumed at ${resume.position}s`);
+                                }
+                            });
+
+                            // Error Handling for HLS
+                            hlsInstance.on(Hls.Events.ERROR, function (event, data) {
+                                if (data.fatal) {
+                                    switch (data.type) {
+                                        case Hls.ErrorTypes.NETWORK_ERROR:
+                                            console.error("Fatal network error encountered, trying to recover");
+                                            hlsInstance.startLoad();
+                                            break;
+                                        case Hls.ErrorTypes.MEDIA_ERROR:
+                                            console.error("Fatal media error encountered, trying to recover");
+                                            hlsInstance.recoverMediaError();
+                                            break;
+                                        default:
+                                            console.error("Fatal error, cannot recover");
+                                            hlsInstance.destroy();
+                                            break;
+                                    }
+                                }
+                            });
+                        } else if (player.canPlayType('application/vnd.apple.mpegurl')) {
+                            // Native support (Safari)
+                            player.src = fullStreamUrl;
+                            
+                            player.addEventListener('loadedmetadata', async () => {
+                                const resume = await API.getResumePoint(videoId);
+                                if (resume && resume.position > 0) {
+                                    player.currentTime = resume.position;
+                                }
+                            });
                         }
                     } else {
                         // Fallback to MP4
-                        videoElement.src = fullStreamUrl;
+                        player.src = fullStreamUrl;
+                        
+                        player.addEventListener('loadedmetadata', async () => {
+                            const resume = await API.getResumePoint(videoId);
+                            if (resume && resume.position > 0) {
+                                player.currentTime = resume.position;
+                            }
+                        });
                     }
                     
-                    videoElement.play();
+                    player.play();
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+
+                    // Periodic History Update (every 5 seconds)
+                    setInterval(() => {
+                        if (!player.paused && !player.ended) {
+                            API.updateHistory(videoId, player.currentTime);
+                        }
+                    }, 5000);
+
+                    // Load engagement stats
+                    loadEngagement();
 
                     // Load recommendations from API
                     const recommendationsList = document.getElementById('recommendations-list');
@@ -307,10 +778,10 @@
                     } else {
                         recommendationsList.innerHTML = recs.map(v => `
                             <div class="rec-item" onclick="location.href='watch.html?id=${v.id}'">
-                                <img src="${CONFIG.API_URL}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" alt="${v.title}">
+                                <img src="${CONFIG.API_URL}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(v.title)}">
                                 <div class="rec-item-info">
-                                    <h4>${v.title}</h4>
-                                    <p>${v.owner_name || 'Creator'}</p>
+                                    <h4>${API.escapeHTML(v.title)}</h4>
+                                    <p>${API.escapeHTML(v.owner_name) || 'Creator'}</p>
                                     <p>${v.views} views</p>
                                 </div>
                             </div>
@@ -322,14 +793,122 @@
             }
         }
 
-        async function earnEngagement() {
-            const result = await API.earnTokens('earn_engagement');
-            if (result.new_balance) {
-                alert(`You earned 0.1 ETT for engaging! New balance: ${result.new_balance} ETT`);
-                checkLogin();
-            } else {
-                alert('Please sign in to earn ETT Tokens!');
+        async function loadEngagement() {
+            try {
+                const stats = await API.getEngagementStats(videoId);
+                document.getElementById('video-views').textContent = `${stats.views.toLocaleString()} views • ${stats.likes} likes`;
+                document.getElementById('comments-count').textContent = `${stats.comments} Comments`;
+                document.getElementById('creator-sub-count').textContent = `${stats.subscribers.toLocaleString()} subscribers`;
+
+                // Update Like button state
+                const likeBtn = document.getElementById('like-btn');
+                if (stats.user_liked) {
+                    likeBtn.classList.add('active');
+                    likeBtn.style.color = '#3ea6ff';
+                    likeBtn.querySelector('span').textContent = 'Liked';
+                } else {
+                    likeBtn.classList.remove('active');
+                    likeBtn.style.color = 'white';
+                    likeBtn.querySelector('span').textContent = 'Like';
+                }
+
+                // Update Subscribe button state
+                const subBtn = document.getElementById('subscribe-btn');
+                if (stats.user_subscribed) {
+                    subBtn.textContent = 'Subscribed';
+                    subBtn.style.background = '#333';
+                    subBtn.style.color = '#aaa';
+                } else {
+                    subBtn.textContent = 'Subscribe';
+                    subBtn.style.background = 'white';
+                    subBtn.style.color = 'black';
+                }
+
+                const comments = await API.getComments(videoId);
+                const commentsList = document.getElementById('comments-list');
+                
+                if (!comments || !Array.isArray(comments) || comments.length === 0) {
+                    commentsList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 20px;">No comments yet. Be the first to comment!</p>';
+                    return;
+                }
+
+                commentsList.innerHTML = comments.map(c => {
+                    const username = API.escapeHTML(c.username) || 'Deleted User';
+                    const avatar = c.avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + c.avatar : 'https://via.placeholder.com/40';
+                    const content = API.escapeHTML(c.content) || '';
+                    const date = c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A';
+
+                    return `
+                    <div class="comment-item" style="display: flex; gap: 12px; margin-bottom: 24px;">
+                        <img src="${avatar}" class="creator-avatar" alt="${username}" onerror="this.src='https://via.placeholder.com/40'">
+                        <div>
+                            <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">@${username} <span style="font-weight: normal; color: var(--text-secondary); margin-left: 8px;">${date}</span></div>
+                            <div style="font-size: 14px;">${content}</div>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            } catch (e) {
+                console.error("Engagement load error", e);
             }
+        }
+
+        async function postComment() {
+            const text = document.getElementById('comment-text').value;
+            if (!text.trim()) return;
+
+            try {
+                const result = await API.postComment(videoId, text);
+                if (result.id) {
+                    if (result.tokens_earned > 0) {
+                        alert(`You earned ${result.tokens_earned} ETT for your first comment on this video!`);
+                        checkLogin();
+                    }
+                    document.getElementById('comment-text').value = '';
+                    loadEngagement();
+                }
+            } catch (e) {
+                alert("Please sign in to comment.");
+            }
+        }
+
+        function cancelComment() {
+            document.getElementById('comment-text').value = '';
+        }
+
+        async function toggleLike() {
+            try {
+                const result = await API.toggleLike(videoId);
+                if (result.tokens_earned > 0) {
+                    alert(`You earned ${result.tokens_earned} ETT for liking this video!`);
+                    checkLogin();
+                }
+                loadEngagement();
+            } catch (e) {
+                alert("Please sign in to like.");
+            }
+        }
+
+        async function toggleSubscribe() {
+            if (!currentVideoOwnerId) return;
+            try {
+                const result = await API.toggleSubscribe(currentVideoOwnerId);
+                if (result.tokens_earned > 0) {
+                    alert(`You earned ${result.tokens_earned} ETT for subscribing!`);
+                    checkLogin();
+                }
+                loadEngagement();
+            } catch (e) {
+                alert("Please sign in to subscribe.");
+            }
+        }
+
+        function shareVideo() {
+            // Use the backend share endpoint for OpenGraph metadata support
+            const shareUrl = `${CONFIG.API_URL}/video/share/${videoId}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert("Shareable link with metadata copied to clipboard!");
+            });
         }
 
         async function reportVideo() {
@@ -345,14 +924,18 @@
             const userInfo = document.getElementById('user-info');
             if (user && user.id) {
                 userInfo.innerHTML = `
-                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens} ETT</div>
-                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${API.escapeHTML(user.username)}</a>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
                 `;
+                if (user.avatar) {
+                    document.getElementById('my-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                }
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await DISCOVERY_PROMISE;
             loadVideoDetails();
             checkLogin();
         });

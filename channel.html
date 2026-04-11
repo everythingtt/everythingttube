@@ -124,12 +124,31 @@
         </div>
 
         <div class="channel-tabs">
-            <div class="tab active">Videos</div>
-            <div class="tab">About</div>
+            <div class="tab active" onclick="switchTab('videos')">Videos</div>
+            <div id="community-tab" class="tab" onclick="switchTab('community')">Community</div>
+            <div class="tab" onclick="switchTab('about')">About</div>
         </div>
 
-        <div id="channel-video-list" class="video-grid">
-            <!-- Videos will be populated here -->
+        <div id="tab-videos" class="tab-content">
+            <div id="channel-video-list" class="video-grid">
+                <!-- Videos will be populated here -->
+            </div>
+        </div>
+
+        <div id="tab-community" class="tab-content" style="display: none;">
+            <div id="community-posts-list" style="max-width: 800px; margin: 0 auto;">
+                <!-- Community posts will be populated here -->
+            </div>
+        </div>
+
+        <div id="tab-about" class="tab-content" style="display: none;">
+            <div class="channel-description" style="max-width: 800px; margin: 0 auto; background: var(--card-bg-color); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <h3 style="margin-bottom: 16px;">Description</h3>
+                <div id="about-desc">No description provided.</div>
+                <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border-color);">
+                <h3 style="margin-bottom: 16px;">Details</h3>
+                <p id="about-stats" style="color: var(--text-secondary);"></p>
+            </div>
         </div>
     </main>
 
@@ -138,6 +157,17 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('u');
+        let currentChannel = null;
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            document.getElementById(`tab-${tabName}`).style.display = 'block';
+
+            if (tabName === 'community') loadCommunity();
+        }
 
         async function loadChannel() {
             if (!username) {
@@ -147,6 +177,7 @@
 
             try {
                 const channel = await API.getChannel(username);
+                currentChannel = channel;
                 if (channel.detail) {
                     alert("Channel not found");
                     location.href = 'index.html';
@@ -155,10 +186,13 @@
 
                 document.title = `${channel.username} - EverythingTTUBE`;
                 document.getElementById('channel-name').textContent = channel.username;
-                document.getElementById('channel-stats').textContent = `${channel.videos.length} videos • Joined ${new Date(channel.created_at).toLocaleDateString()}`;
+                const statsStr = `${channel.videos.length} videos • Joined ${new Date(channel.created_at).toLocaleDateString()}`;
+                document.getElementById('channel-stats').textContent = statsStr;
+                document.getElementById('about-stats').textContent = statsStr;
                 
                 if (channel.description) {
                     document.getElementById('channel-desc').textContent = channel.description;
+                    document.getElementById('about-desc').textContent = channel.description;
                 }
 
                 if (channel.avatar) {
@@ -169,7 +203,7 @@
                     document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${channel.banner}')`;
                 }
 
-                // Populate social links
+                // ... (social links code)
                 const socialContainer = document.getElementById('social-links');
                 if (channel.social_links) {
                     try {
@@ -204,9 +238,9 @@
                 } else {
                     videoList.innerHTML = channel.videos.map(video => `
                         <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
-                            <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${video.title}">
+                            <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(video.title)}">
                             <div class="video-info">
-                                <h3>${video.title}</h3>
+                                <h3>${API.escapeHTML(video.title)}</h3>
                                 <p>${video.views} views • ${new Date(video.created_at).toLocaleDateString()}</p>
                             </div>
                         </div>
@@ -217,19 +251,91 @@
             }
         }
 
+        async function loadCommunity() {
+            const list = document.getElementById('community-posts-list');
+            try {
+                const posts = await API.getChannelPosts(username);
+                
+                // Show "Create Post" if it's the owner's channel
+                let createPostHtml = '';
+                const user = await API.getMe();
+                if (user && user.username === username) {
+                    createPostHtml = `
+                        <div class="stat-card" style="text-align: left; margin-bottom: 24px; padding: 20px;">
+                            <h4 style="margin-bottom: 12px;">Create Community Post</h4>
+                            <form id="community-post-form">
+                                <textarea id="post-content" placeholder="What's on your mind?" style="width: 100%; height: 80px; background: #121212; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 4px; margin-bottom: 12px;"></textarea>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <input type="file" id="post-image" accept="image/*" style="font-size: 12px;">
+                                    <button type="submit" class="primary-btn" style="padding: 8px 20px;">Post</button>
+                                </div>
+                            </form>
+                        </div>
+                    `;
+                }
+
+                list.innerHTML = createPostHtml + posts.map(p => `
+                    <div class="stat-card" style="text-align: left; margin-bottom: 24px; padding: 20px;">
+                        <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center;">
+                            <img src="${p.owner_avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + p.owner_avatar : 'https://via.placeholder.com/40'}" class="owner-avatar-small" style="width: 40px; height: 40px;" alt="${API.escapeHTML(p.owner_name)}">
+                            <div>
+                                <div style="font-weight: bold;">${API.escapeHTML(p.owner_name)}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary);">${new Date(p.created_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        <div style="font-size: 15px; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap;">${API.escapeHTML(p.content)}</div>
+                        ${p.image ? `<img src="${CONFIG.API_URL}/storage/community/${p.image}" style="width: 100%; border-radius: 8px; margin-bottom: 12px; max-height: 400px; object-fit: contain; background: #111;">` : ''}
+                        <div style="display: flex; gap: 20px; color: var(--text-secondary); font-size: 14px;">
+                            <span style="cursor: pointer;" onclick="likePost(${p.id})"><i class="fas fa-thumbs-up"></i> ${p.likes}</span>
+                        </div>
+                    </div>
+                `).join('') || (createPostHtml + '<p style="text-align: center; color: var(--text-secondary); margin-top: 40px;">No community posts yet.</p>');
+
+                if (document.getElementById('community-post-form')) {
+                    document.getElementById('community-post-form').onsubmit = async (e) => {
+                        e.preventDefault();
+                        const content = document.getElementById('post-content').value;
+                        const image = document.getElementById('post-image').files[0];
+                        if (!content.trim() && !image) return;
+
+                        const formData = new FormData();
+                        formData.append('content', content);
+                        if (image) formData.append('image', image);
+
+                        const res = await API.createCommunityPost(formData);
+                        if (res.message) {
+                            loadCommunity();
+                        }
+                    };
+                }
+            } catch (e) {
+                console.error("Community load error", e);
+            }
+        }
+
+        async function likePost(postId) {
+            try {
+                const res = await API.likeCommunityPost(postId);
+                loadCommunity();
+            } catch (e) {
+                alert("Error liking post");
+            }
+        }
+
         async function checkLogin() {
             const user = await API.getMe();
             const userInfo = document.getElementById('user-info');
             if (user && user.id) {
                 userInfo.innerHTML = `
                     <div class="token-badge"><i class="fas fa-coins"></i> ${user.ett_tokens.toFixed(1)} ETT</div>
-                    <a href="studio.html" style="color: white; margin-left: 15px;">${user.username}</a>
+                    <a href="studio.html" style="color: white; margin-left: 15px;">${API.escapeHTML(user.username)}</a>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
                 `;
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await DISCOVERY_PROMISE;
             loadChannel();
             checkLogin();
         });

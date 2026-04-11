@@ -102,7 +102,7 @@
                     <tr>
                         <td style="color: var(--text-secondary); white-space: nowrap;">${new Date(l.created_at).toLocaleString()}</td>
                         <td><span class="log-level level-${l.level}">${l.level}</span></td>
-                        <td class="log-message">${l.message}</td>
+                        <td class="log-message">${API.escapeHTML(l.message)}</td>
                         <td>${l.user_id ? `#${l.user_id}` : 'System'}</td>
                     </tr>
                 `).join('');
@@ -121,7 +121,7 @@
                     return;
                 }
                 userInfo.innerHTML = `
-                    <span style="color: white; margin-right: 15px;">Admin: ${user.username}</span>
+                    <span style="color: white; margin-right: 15px;">Admin: ${API.escapeHTML(user.username)}</span>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer;">Logout</button>
                 `;
             } else {

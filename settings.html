@@ -259,7 +259,9 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for endpoint discovery before making any calls
+            await DISCOVERY_PROMISE;
             checkLogin();
             loadProfile();
         });
