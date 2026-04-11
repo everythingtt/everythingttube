@@ -580,7 +580,7 @@
                     subStatus.innerHTML = `No subtitles uploaded`;
                 }
                 
-                document.getElementById('edit-thumbnail-preview').src = `${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}`;
+                document.getElementById('edit-thumbnail-preview').src = API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`);
                 
                 document.getElementById('edit-modal').style.display = 'flex';
             } catch (e) {
