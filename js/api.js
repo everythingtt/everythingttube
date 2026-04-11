@@ -332,6 +332,22 @@ const API = {
         return await response.json();
     },
 
+    async editComment(commentId, content) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/comment/${commentId}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+        return await response.json();
+    },
+
+    async deleteComment(commentId) {
+        const response = await this.fetch(`${CONFIG.API_URL}/engagement/comment/${commentId}`, {
+            method: 'DELETE'
+        });
+        return await response.json();
+    },
+
     async toggleLike(videoId) {
         const response = await this.fetch(`${CONFIG.API_URL}/engagement/like/${videoId}`, {
             method: 'POST'

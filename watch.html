@@ -826,6 +826,7 @@
 
                 const comments = await API.getComments(videoId);
                 const commentsList = document.getElementById('comments-list');
+                const currentUser = await API.getMe();
                 
                 if (!comments || !Array.isArray(comments) || comments.length === 0) {
                     commentsList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 20px;">No comments yet. Be the first to comment!</p>';
@@ -834,22 +835,77 @@
 
                 commentsList.innerHTML = comments.map(c => {
                     const username = API.escapeHTML(c.username) || 'Deleted User';
-                    const avatar = c.avatar ? API.getResourceUrl('auth', '/storage/avatars/' + c.avatar) : 'https://via.placeholder.com/40';
+                    const avatar = c.avatar ? API.getResourceUrl('api', '/storage/avatars/' + c.avatar) : 'https://via.placeholder.com/40';
                     const content = API.escapeHTML(c.content) || '';
                     const date = c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A';
+                    
+                    const isOwner = currentUser && currentUser.id === c.user_id;
+                    const isVideoOwner = currentUser && currentUser.id === currentVideoOwnerId;
 
                     return `
-                    <div class="comment-item" style="display: flex; gap: 12px; margin-bottom: 24px;">
+                    <div class="comment-item" id="comment-${c.id}" style="display: flex; gap: 12px; margin-bottom: 24px;">
                         <img src="${avatar}" class="creator-avatar" alt="${username}" onerror="this.src='https://via.placeholder.com/40'">
-                        <div>
-                            <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px;">@${username} <span style="font-weight: normal; color: var(--text-secondary); margin-left: 8px;">${date}</span></div>
-                            <div style="font-size: 14px;">${content}</div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 13px; font-weight: bold; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>@${username} <span style="font-weight: normal; color: var(--text-secondary); margin-left: 8px;">${date}</span></div>
+                                ${(isOwner || isVideoOwner) ? `
+                                    <div class="comment-actions">
+                                        ${isOwner ? `<i class="fas fa-edit" style="cursor: pointer; margin-right: 12px; font-size: 12px; color: var(--text-secondary);" onclick="startEditComment(${c.id})"></i>` : ''}
+                                        <i class="fas fa-trash" style="cursor: pointer; font-size: 12px; color: var(--text-secondary);" onclick="deleteComment(${c.id})"></i>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div id="comment-text-${c.id}" style="font-size: 14px;">${content}</div>
+                            <div id="comment-edit-box-${c.id}" style="display: none; margin-top: 8px;">
+                                <textarea id="comment-edit-text-${c.id}" style="width: 100%; background: #121212; border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 4px; resize: none;">${c.content}</textarea>
+                                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+                                    <button class="action-btn" style="font-size: 12px; padding: 4px 12px;" onclick="cancelEditComment(${c.id})">Cancel</button>
+                                    <button class="primary-btn" style="width: auto; font-size: 12px; padding: 4px 12px;" onclick="saveEditComment(${c.id})">Save</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
                 }).join('');
             } catch (e) {
                 console.error("Engagement load error", e);
+            }
+        }
+
+        function startEditComment(commentId) {
+            document.getElementById(`comment-text-${commentId}`).style.display = 'none';
+            document.getElementById(`comment-edit-box-${commentId}`).style.display = 'block';
+        }
+
+        function cancelEditComment(commentId) {
+            document.getElementById(`comment-text-${commentId}`).style.display = 'block';
+            document.getElementById(`comment-edit-box-${commentId}`).style.display = 'none';
+        }
+
+        async function saveEditComment(commentId) {
+            const newContent = document.getElementById(`comment-edit-text-${commentId}`).value;
+            if (!newContent.trim()) return;
+
+            try {
+                const res = await API.editComment(commentId, newContent);
+                if (res.message) {
+                    loadEngagement();
+                }
+            } catch (e) {
+                alert("Error updating comment");
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (confirm("Delete this comment permanently?")) {
+                try {
+                    const res = await API.deleteComment(commentId);
+                    if (res.message) {
+                        loadEngagement();
+                    }
+                } catch (e) {
+                    alert("Error deleting comment");
+                }
             }
         }
 
