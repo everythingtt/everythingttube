@@ -195,44 +195,34 @@
                 document.getElementById('profile-role').textContent = user.role.toUpperCase();
                 
                 if (user.avatar) {
-                    document.getElementById('profile-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${user.avatar}`);
+                    document.getElementById('profile-avatar').src = API.getResourceUrl('api', `/storage/avatars/${user.avatar}`);
                 }
                 if (user.banner) {
-                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${user.banner}`)}')`;
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('api', `/storage/banners/${user.banner}`)}')`;
                 }
             }
         }
 
         async function uploadAvatar(input) {
             if (input.files && input.files[0]) {
-                try {
-                    const result = await API.uploadAvatar(input.files[0]);
-                    if (result.avatar) {
-                        document.getElementById('profile-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${result.avatar}`);
-                        alert("Avatar updated!");
-                    } else {
-                        alert(result.detail || "Upload failed");
-                    }
-                } catch (e) {
-                    console.error("Avatar upload error", e);
-                    alert("Upload failed. Make sure you are logged in and the file is an image.");
+                const result = await API.uploadAvatar(input.files[0]);
+                if (result.avatar) {
+                    document.getElementById('profile-avatar').src = API.getResourceUrl('api', `/storage/avatars/${result.avatar}`);
+                    alert("Avatar updated!");
+                } else {
+                    alert(result.detail || "Upload failed");
                 }
             }
         }
 
         async function uploadBanner(input) {
             if (input.files && input.files[0]) {
-                try {
-                    const result = await API.uploadBanner(input.files[0]);
-                    if (result.banner) {
-                        document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${result.banner}`)}')`;
-                        alert("Banner updated!");
-                    } else {
-                        alert(result.detail || "Upload failed");
-                    }
-                } catch (e) {
-                    console.error("Banner upload error", e);
-                    alert("Upload failed. Make sure you are logged in and the file is an image.");
+                const result = await API.uploadBanner(input.files[0]);
+                if (result.banner) {
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('api', `/storage/banners/${result.banner}`)}')`;
+                    alert("Banner updated!");
+                } else {
+                    alert(result.detail || "Upload failed");
                 }
             }
         }

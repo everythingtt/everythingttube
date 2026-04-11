@@ -88,7 +88,7 @@
                         <img class="thumbnail" src="${API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`)}" alt="${API.escapeHTML(video.title)}">
                         <div class="video-info">
                             <div class="video-meta-top">
-                                <img class="owner-avatar-small" src="${video.owner_avatar ? API.getResourceUrl('auth', '/storage/avatars/' + video.owner_avatar) : 'https://via.placeholder.com/36'}" alt="${API.escapeHTML(video.owner_name)}" onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer;">
+                                <img class="owner-avatar-small" src="${video.owner_avatar ? API.getResourceUrl('api', '/storage/avatars/' + video.owner_avatar) : 'https://via.placeholder.com/36'}" alt="${API.escapeHTML(video.owner_name)}" onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer;">
                                  <div>
                                      <h3>${API.escapeHTML(video.title)}</h3>
                                      <p onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer; display: inline-block;">${API.escapeHTML(video.owner_name)}</p>

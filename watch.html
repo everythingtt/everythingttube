@@ -639,7 +639,7 @@
                     document.getElementById('creator-avatar').onclick = () => location.href = `channel.html?u=${video.owner_name}`;
                     
                     if (video.owner_avatar) {
-                        document.getElementById('creator-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${video.owner_avatar}`);
+                        document.getElementById('creator-avatar').src = API.getResourceUrl('api', `/storage/avatars/${video.owner_avatar}`);
                     }
                     
                     const streamData = await API.getVideoStream(videoId);

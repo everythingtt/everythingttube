@@ -196,11 +196,11 @@
                 }
 
                 if (channel.avatar) {
-                    document.getElementById('channel-avatar-img').src = API.getResourceUrl('auth', `/storage/avatars/${channel.avatar}`);
+                    document.getElementById('channel-avatar-img').src = API.getResourceUrl('api', `/storage/avatars/${channel.avatar}`);
                 }
 
                 if (channel.banner) {
-                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${channel.banner}`)}')`;
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('api', `/storage/banners/${channel.banner}`)}')`;
                 }
 
                 // ... (social links code)

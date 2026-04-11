@@ -395,10 +395,10 @@
                     
                     // Add bypass param to user images
                     if (user.avatar) {
-                        document.getElementById('studio-avatar-img').src = API.getResourceUrl('auth', `/storage/avatars/${user.avatar}`);
+                        document.getElementById('studio-avatar-img').src = API.getResourceUrl('api', `/storage/avatars/${user.avatar}`);
                     }
                     if (user.banner) {
-                        document.getElementById('studio-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${user.banner}`)}')`;
+                        document.getElementById('studio-banner').style.backgroundImage = `url('${API.getResourceUrl('api', `/storage/banners/${user.banner}`)}')`;
                     }
                     
                     // Basic stats from user object
