@@ -639,7 +639,7 @@
                     document.getElementById('creator-avatar').onclick = () => location.href = `channel.html?u=${video.owner_name}`;
                     
                     if (video.owner_avatar) {
-                        document.getElementById('creator-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${video.owner_avatar}`;
+                        document.getElementById('creator-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${video.owner_avatar}`);
                     }
                     
                     const streamData = await API.getVideoStream(videoId);
@@ -654,7 +654,7 @@
                         track.kind = 'subtitles';
                         track.label = 'English (Manual)';
                         track.srclang = 'en';
-                        track.src = `${CONFIG.API_URL}${streamData.subtitles}`;
+                        track.src = API.getResourceUrl('api', streamData.subtitles);
                         track.default = true;
                         videoElement.appendChild(track);
                     }
@@ -674,7 +674,7 @@
                             track.kind = 'subtitles';
                             track.label = langNames[lang] || lang.toUpperCase();
                             track.srclang = lang;
-                            track.src = `${CONFIG.API_URL}/storage/subtitles/${filename}`;
+                            track.src = API.getResourceUrl('api', `/storage/subtitles/${filename}`);
                             videoElement.appendChild(track);
                         }
                     }
@@ -778,7 +778,7 @@
                     } else {
                         recommendationsList.innerHTML = recs.map(v => `
                             <div class="rec-item" onclick="location.href='watch.html?id=${v.id}'">
-                                <img src="${CONFIG.API_URL}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(v.title)}">
+                                <img src="${API.getResourceUrl('api', `/storage/thumbnails/${v.thumbnail || 'default.jpg'}`)}" alt="${API.escapeHTML(v.title)}">
                                 <div class="rec-item-info">
                                     <h4>${API.escapeHTML(v.title)}</h4>
                                     <p>${API.escapeHTML(v.owner_name) || 'Creator'}</p>
@@ -834,7 +834,7 @@
 
                 commentsList.innerHTML = comments.map(c => {
                     const username = API.escapeHTML(c.username) || 'Deleted User';
-                    const avatar = c.avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + c.avatar : 'https://via.placeholder.com/40';
+                    const avatar = c.avatar ? API.getResourceUrl('auth', '/storage/avatars/' + c.avatar) : 'https://via.placeholder.com/40';
                     const content = API.escapeHTML(c.content) || '';
                     const date = c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A';
 
@@ -929,7 +929,7 @@
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
                 `;
                 if (user.avatar) {
-                    document.getElementById('my-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                    document.getElementById('my-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${user.avatar}`);
                 }
             }
         }

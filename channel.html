@@ -196,11 +196,11 @@
                 }
 
                 if (channel.avatar) {
-                    document.getElementById('channel-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${channel.avatar}`;
+                    document.getElementById('channel-avatar-img').src = API.getResourceUrl('auth', `/storage/avatars/${channel.avatar}`);
                 }
 
                 if (channel.banner) {
-                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${channel.banner}')`;
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${channel.banner}`)}')`;
                 }
 
                 // ... (social links code)
@@ -238,7 +238,7 @@
                 } else {
                     videoList.innerHTML = channel.videos.map(video => `
                         <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
-                            <img class="thumbnail" src="${CONFIG.API_URL}/storage/thumbnails/${video.thumbnail || 'default.jpg'}" alt="${API.escapeHTML(video.title)}">
+                            <img class="thumbnail" src="${API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`)}" alt="${API.escapeHTML(video.title)}">
                             <div class="video-info">
                                 <h3>${API.escapeHTML(video.title)}</h3>
                                 <p>${video.views} views • ${new Date(video.created_at).toLocaleDateString()}</p>
@@ -277,14 +277,14 @@
                 list.innerHTML = createPostHtml + posts.map(p => `
                     <div class="stat-card" style="text-align: left; margin-bottom: 24px; padding: 20px;">
                         <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: center;">
-                            <img src="${p.owner_avatar ? CONFIG.AUTH_URL + '/storage/avatars/' + p.owner_avatar : 'https://via.placeholder.com/40'}" class="owner-avatar-small" style="width: 40px; height: 40px;" alt="${API.escapeHTML(p.owner_name)}">
+                            <img src="${p.owner_avatar ? API.getResourceUrl('auth', '/storage/avatars/' + p.owner_avatar) : 'https://via.placeholder.com/40'}" class="owner-avatar-small" style="width: 40px; height: 40px;" alt="${API.escapeHTML(p.owner_name)}">
                             <div>
                                 <div style="font-weight: bold;">${API.escapeHTML(p.owner_name)}</div>
                                 <div style="font-size: 12px; color: var(--text-secondary);">${new Date(p.created_at).toLocaleDateString()}</div>
                             </div>
                         </div>
                         <div style="font-size: 15px; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap;">${API.escapeHTML(p.content)}</div>
-                        ${p.image ? `<img src="${CONFIG.API_URL}/storage/community/${p.image}" style="width: 100%; border-radius: 8px; margin-bottom: 12px; max-height: 400px; object-fit: contain; background: #111;">` : ''}
+                        ${p.image ? `<img src="${API.getResourceUrl('api', `/storage/community/${p.image}`)}" style="width: 100%; border-radius: 8px; margin-bottom: 12px; max-height: 400px; object-fit: contain; background: #111;">` : ''}
                         <div style="display: flex; gap: 20px; color: var(--text-secondary); font-size: 14px;">
                             <span style="cursor: pointer;" onclick="likePost(${p.id})"><i class="fas fa-thumbs-up"></i> ${p.likes}</span>
                         </div>

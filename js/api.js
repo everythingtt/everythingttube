@@ -95,6 +95,27 @@ const API = {
         }
     },
 
+    getResourceUrl(service, path) {
+        if (!path) return "";
+        let baseUrl = this.getServiceUrl(service);
+        // Ensure path starts with / if baseUrl doesn't end with /
+        if (!baseUrl.endsWith('/') && !path.startsWith('/')) {
+            baseUrl += '/';
+        } else if (baseUrl.endsWith('/') && path.startsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+        }
+        
+        let url = `${baseUrl}${path}`;
+        
+        // Append ngrok bypass query parameter to ALL ngrok requests
+        if (url.includes('ngrok-free.dev')) {
+            const urlObj = new URL(url);
+            urlObj.searchParams.set('ngrok-skip-browser-warning', 'any');
+            url = urlObj.toString();
+        }
+        return url;
+    },
+
     // Auth
     async login(email, password) {
         const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/login`, {

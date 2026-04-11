@@ -394,12 +394,11 @@
                     document.getElementById('studio-role').textContent = user.role.toUpperCase();
                     
                     // Add bypass param to user images
-                    const bypass = "?ngrok-skip-browser-warning=any";
                     if (user.avatar) {
-                        document.getElementById('studio-avatar-img').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}${bypass}`;
+                        document.getElementById('studio-avatar-img').src = API.getResourceUrl('auth', `/storage/avatars/${user.avatar}`);
                     }
                     if (user.banner) {
-                        document.getElementById('studio-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}${bypass}')`;
+                        document.getElementById('studio-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${user.banner}`)}')`;
                     }
                     
                     // Basic stats from user object
@@ -423,7 +422,7 @@
                     if (analytics.top_videos && analytics.top_videos.length > 0) {
                         topList.innerHTML = analytics.top_videos.map(v => `
                             <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center; cursor: pointer;" onclick="openEditModal(${v.id})">
-                                <img src="${API.getServiceUrl('api')}/storage/thumbnails/${v.thumbnail || 'default.jpg'}" style="width: 60px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" alt="${API.escapeHTML(v.title)}">
+                                <img src="${API.getResourceUrl('api', `/storage/thumbnails/${v.thumbnail || 'default.jpg'}`)}" style="width: 60px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" alt="${API.escapeHTML(v.title)}">
                                 <div style="flex: 1; overflow: hidden;">
                                     <div style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${API.escapeHTML(v.title)}</div>
                                     <div style="font-size: 12px; color: var(--text-secondary);">${(v.views || 0).toLocaleString()} views</div>
@@ -494,7 +493,7 @@
                 return `
                 <tr>
                     <td style="display: flex; gap: 12px; align-items: center;">
-                        <img src="${API.getServiceUrl('api')}/storage/thumbnails/${thumbnail}${bypass}" style="width: 100px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/100x56'">
+                        <img src="${API.getResourceUrl('api', `/storage/thumbnails/${thumbnail}`)}" style="width: 100px; aspect-ratio: 16/9; border-radius: 4px; object-fit: cover;" onerror="this.src='https://via.placeholder.com/100x56'">
                         <div>
                             <div style="font-weight: bold;">${title}</div>
                             <div style="font-size: 12px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${description}</div>
