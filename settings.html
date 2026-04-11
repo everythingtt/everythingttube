@@ -195,10 +195,10 @@
                 document.getElementById('profile-role').textContent = user.role.toUpperCase();
                 
                 if (user.avatar) {
-                    document.getElementById('profile-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${user.avatar}`;
+                    document.getElementById('profile-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${user.avatar}`);
                 }
                 if (user.banner) {
-                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${user.banner}')`;
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${user.banner}`)}')`;
                 }
             }
         }
@@ -207,7 +207,7 @@
             if (input.files && input.files[0]) {
                 const result = await API.uploadAvatar(input.files[0]);
                 if (result.avatar) {
-                    document.getElementById('profile-avatar').src = `${CONFIG.AUTH_URL}/storage/avatars/${result.avatar}`;
+                    document.getElementById('profile-avatar').src = API.getResourceUrl('auth', `/storage/avatars/${result.avatar}`);
                     alert("Avatar updated!");
                 } else {
                     alert(result.detail || "Upload failed");
@@ -219,7 +219,7 @@
             if (input.files && input.files[0]) {
                 const result = await API.uploadBanner(input.files[0]);
                 if (result.banner) {
-                    document.getElementById('channel-banner').style.backgroundImage = `url('${CONFIG.AUTH_URL}/storage/banners/${result.banner}')`;
+                    document.getElementById('channel-banner').style.backgroundImage = `url('${API.getResourceUrl('auth', `/storage/banners/${result.banner}`)}')`;
                     alert("Banner updated!");
                 } else {
                     alert(result.detail || "Upload failed");

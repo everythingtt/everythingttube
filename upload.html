@@ -157,7 +157,8 @@
             progressFill.style.width = '0%';
 
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${CONFIG.UPLOAD_URL}/video/upload`, true);
+            const uploadUrl = API.getResourceUrl('upload', '/video/upload');
+            xhr.open('POST', uploadUrl, true);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
             xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
 

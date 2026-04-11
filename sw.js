@@ -32,7 +32,7 @@ self.addEventListener('fetch', (event) => {
                         method: event.request.method,
                         headers: newHeaders,
                         mode: 'cors',
-                        credentials: 'omit'
+                        credentials: event.request.credentials || 'include'
                     };
                     
                     // Body is only allowed for certain methods

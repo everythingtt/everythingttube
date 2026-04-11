@@ -36,33 +36,29 @@ function loadLocalOverrides() {
 
 // Automatic Discovery: Fetch latest URLs from discovery.json (GitHub Pages origin)
 async function autoDiscoverEndpoints() {
-    try {
-        console.log("Discovering endpoints...");
-        // Use a cache-busting parameter to avoid old URLs
-        const cacheBuster = `?t=${new Date().getTime()}`;
-        const GITHUB_DISCOVERY_URL = `https://raw.githubusercontent.com/everythingtt/everythingttube/refs/heads/main/discovery.json${cacheBuster}`;
-        
-        let response = await fetch(GITHUB_DISCOVERY_URL);
-        
-        // Fallback to local discovery.json if GitHub is unavailable
-        if (!response.ok) {
-            console.warn("GitHub discovery failed, falling back to local discovery.json");
-            response = await fetch(`discovery.json${cacheBuster}`);
-        }
+    const discoveryUrls = [
+        `https://raw.githubusercontent.com/everythingtt/everythingttube/refs/heads/main/discovery.json?t=${Date.now()}`,
+        `discovery.json?t=${Date.now()}`
+    ];
 
-        if (response.ok) {
-            const remoteConfig = await response.json();
-            if (remoteConfig.api) CONFIG.API_URL = remoteConfig.api;
-            if (remoteConfig.auth) CONFIG.AUTH_URL = remoteConfig.auth;
-            if (remoteConfig.video_stream) CONFIG.STREAM_URL = remoteConfig.video_stream;
-            if (remoteConfig.upload) CONFIG.UPLOAD_URL = remoteConfig.upload;
-            if (remoteConfig.admin) CONFIG.ADMIN_URL = remoteConfig.admin;
-            console.log("Automatic discovery successful:", CONFIG);
-        } else {
-            console.warn("Could not find discovery.json in any location.");
+    for (const url of discoveryUrls) {
+        try {
+            console.log(`Discovering endpoints from ${url}...`);
+            const response = await fetch(url);
+            if (response.ok) {
+                const remoteConfig = await response.json();
+                if (remoteConfig.api) CONFIG.API_URL = remoteConfig.api;
+                if (remoteConfig.auth) CONFIG.AUTH_URL = remoteConfig.auth;
+                if (remoteConfig.video_stream) CONFIG.STREAM_URL = remoteConfig.video_stream;
+                if (remoteConfig.upload) CONFIG.UPLOAD_URL = remoteConfig.upload;
+                if (remoteConfig.admin) CONFIG.ADMIN_URL = remoteConfig.admin;
+                console.log("Automatic discovery successful:", CONFIG);
+                break; // Exit loop on success
+            }
+        } catch (e) {
+            console.warn(`Discovery error for ${url}:`, e.message);
+            // Continue to next URL
         }
-    } catch (e) {
-        console.warn("Discovery error, using defaults/overrides:", e);
     }
     
     // Still apply manual overrides if any (they take precedence)
