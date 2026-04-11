@@ -365,11 +365,17 @@
         function switchTab(tabName) {
             // Update menu
             document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-            document.getElementById(`menu-${tabName}`).classList.add('active');
+            const menuBtn = document.getElementById(`menu-${tabName}`);
+            if (menuBtn) menuBtn.classList.add('active');
 
             // Update content
             document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
-            document.getElementById(`tab-${tabName}`).style.display = 'block';
+            const tabDiv = document.getElementById(`tab-${tabName}`);
+            if (tabDiv) tabDiv.style.display = 'block';
+
+            // Refresh data based on tab
+            if (tabName === 'dashboard') loadAnalytics();
+            if (tabName === 'content') loadVideosList();
         }
 
         async function loadDashboard() {
@@ -479,8 +485,6 @@
                 return;
             }
 
-            const bypass = "?ngrok-skip-browser-warning=any";
-
             videoList.innerHTML = videos.map(video => {
                 const status = (video.status || 'ready').toUpperCase();
                 const thumbnail = video.thumbnail || 'default.jpg';
@@ -580,7 +584,7 @@
                     subStatus.innerHTML = `No subtitles uploaded`;
                 }
                 
-                document.getElementById('edit-thumbnail-preview').src = `${API.getServiceUrl('api')}/storage/thumbnails/${video.thumbnail || 'default.jpg'}`;
+                document.getElementById('edit-thumbnail-preview').src = API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`);
                 
                 document.getElementById('edit-modal').style.display = 'flex';
             } catch (e) {

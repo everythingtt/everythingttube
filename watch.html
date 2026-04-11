@@ -855,9 +855,13 @@
 
         async function postComment() {
             const text = document.getElementById('comment-text').value;
-            if (!text.trim()) return;
+            const btn = document.getElementById('post-comment-btn');
+            if (!text.trim() || btn.disabled) return;
 
             try {
+                btn.disabled = true;
+                btn.textContent = 'Posting...';
+                
                 const result = await API.postComment(videoId, text);
                 if (result.id) {
                     if (result.tokens_earned > 0) {
@@ -865,10 +869,14 @@
                         checkLogin();
                     }
                     document.getElementById('comment-text').value = '';
-                    loadEngagement();
+                    // Small delay to ensure DB consistency across all instances
+                    setTimeout(loadEngagement, 500);
                 }
             } catch (e) {
                 alert("Please sign in to comment.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Comment';
             }
         }
 
