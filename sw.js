@@ -6,15 +6,18 @@ const BYPASS_VALUE = 'any';
 const CACHE_NAME = 'ttube-v1';
 
 // Assets to cache immediately on install
+// Use relative paths to handle GitHub sub-directory hosting (/everythingttube/)
 const PRECACHE_ASSETS = [
-    '/',
-    '/index.html',
-    '/watch.html',
-    '/studio.html',
-    '/upload.html',
-    '/css/style.css',
-    '/js/config.js',
-    '/js/api.js',
+    'index.html',
+    'watch.html',
+    'studio.html',
+    'upload.html',
+    'history.html',
+    'network.html',
+    'console.html',
+    'css/style.css',
+    'js/config.js',
+    'js/api.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
     'https://cdn.jsdelivr.net/npm/hls.js@latest'
 ];
