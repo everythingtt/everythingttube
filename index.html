@@ -6,6 +6,9 @@
     <title>EverythingTTUBE - Home</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff0000">
+    <link rel="apple-touch-icon" href="social-images/youtube.png">
 </head>
 <body>
     <header>
@@ -62,7 +65,27 @@
 
         <h2 id="browse-title" style="margin-bottom: 20px;">Browse Videos</h2>
         <div id="video-list" class="video-grid">
-            <!-- Videos will be populated here -->
+            <!-- Skeleton Loaders -->
+            <div class="video-card skeleton-card">
+                <div class="thumbnail skeleton"></div>
+                <div class="text-line skeleton" style="width: 80%;"></div>
+                <div class="text-line skeleton" style="width: 60%;"></div>
+            </div>
+            <div class="video-card skeleton-card">
+                <div class="thumbnail skeleton"></div>
+                <div class="text-line skeleton" style="width: 80%;"></div>
+                <div class="text-line skeleton" style="width: 60%;"></div>
+            </div>
+            <div class="video-card skeleton-card">
+                <div class="thumbnail skeleton"></div>
+                <div class="text-line skeleton" style="width: 80%;"></div>
+                <div class="text-line skeleton" style="width: 60%;"></div>
+            </div>
+            <div class="video-card skeleton-card">
+                <div class="thumbnail skeleton"></div>
+                <div class="text-line skeleton" style="width: 80%;"></div>
+                <div class="text-line skeleton" style="width: 60%;"></div>
+            </div>
         </div>
     </main>
 
@@ -83,13 +106,20 @@
 
             try {
                 const videos = query ? await API.searchVideos(query) : await API.listVideos();
+                
+                // Clear skeletons
+                videoList.innerHTML = '';
+
                 if (videos.length === 0) {
                     videoList.innerHTML = '<p style="grid-column: 1/-1; text-align: center; margin-top: 40px;">No videos found.</p>';
                     return;
                 }
                 videoList.innerHTML = videos.map(video => `
                     <div class="video-card" onclick="location.href='watch.html?id=${video.id}'">
-                        <img class="thumbnail" src="${API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`)}" alt="${API.escapeHTML(video.title)}">
+                        <img class="thumbnail" 
+                             src="${API.getResourceUrl('api', `/storage/thumbnails/${video.thumbnail || 'default.jpg'}`)}" 
+                             alt="${API.escapeHTML(video.title)}"
+                             loading="lazy">
                         <div class="video-info">
                             <div class="video-meta-top">
                                 <img class="owner-avatar-small" src="${video.owner_avatar ? API.getResourceUrl('api', '/storage/avatars/' + video.owner_avatar) : 'https://via.placeholder.com/36'}" alt="${API.escapeHTML(video.owner_name)}" onclick="event.stopPropagation(); location.href='channel.html?u=${video.owner_name}'" style="cursor: pointer;">
