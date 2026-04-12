@@ -188,6 +188,9 @@
 <body>
     <header>
         <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="index.html" class="logo">Everything<span>TTUBE</span> Studio</a>
         </div>
         <div class="header-right">
@@ -198,14 +201,14 @@
     </header>
 
     <div class="sidebar">
-        <a href="index.html"><i class="fas fa-arrow-left"></i> Back to TTUBE</a>
+        <a href="index.html"><i class="fas fa-arrow-left"></i> <span>Back to TTUBE</span></a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
-        <a href="#" id="menu-dashboard" class="active" onclick="switchTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
-        <a href="#" id="menu-content" onclick="switchTab('content')"><i class="fas fa-video"></i> Content</a>
-        <a href="upload.html"><i class="fas fa-upload"></i> Upload Content</a>
+        <a href="#" id="menu-dashboard" class="active" onclick="switchTab('dashboard')"><i class="fas fa-chart-line"></i> <span>Dashboard</span></a>
+        <a href="#" id="menu-content" onclick="switchTab('content')"><i class="fas fa-video"></i> <span>Content</span></a>
+        <a href="upload.html"><i class="fas fa-upload"></i> <span>Upload Content</span></a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
-        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
-        <a href="settings.html"><i class="fas fa-cog"></i> Studio Settings</a>
+        <a href="tokens.html"><i class="fas fa-coins"></i> <span>Monetization</span></a>
+        <a href="settings.html"><i class="fas fa-cog"></i> <span>Studio Settings</span></a>
     </div>
 
     <main>
@@ -659,6 +662,12 @@
                 location.href = 'auth.html';
             }
         }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('main').classList.toggle('shifted');
+        });
 
         document.addEventListener('DOMContentLoaded', async () => {
             await DISCOVERY_PROMISE;

@@ -37,6 +37,9 @@
 <body>
     <header>
         <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="index.html" class="logo">Everything<span>TTUBE</span> Admin</a>
         </div>
         <div class="header-right">
@@ -47,11 +50,11 @@
     </header>
 
     <div class="sidebar">
-        <a href="index.html"><i class="fas fa-home"></i> Home</a>
+        <a href="index.html"><i class="fas fa-home"></i> <span>Home</span></a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
-        <a href="admin.html" class="active"><i class="fas fa-user-shield"></i> Pending Reports</a>
-        <a href="users.html"><i class="fas fa-users"></i> User Management</a>
-        <a href="logs.html"><i class="fas fa-list-ul"></i> System Logs</a>
+        <a href="admin.html" class="active"><i class="fas fa-user-shield"></i> <span>Pending Reports</span></a>
+        <a href="users.html"><i class="fas fa-users"></i> <span>User Management</span></a>
+        <a href="logs.html"><i class="fas fa-list-ul"></i> <span>System Logs</span></a>
     </div>
 
     <main>
@@ -146,6 +149,12 @@
                 location.href = 'auth.html';
             }
         }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('main').classList.toggle('shifted');
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             checkLogin();

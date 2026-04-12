@@ -398,6 +398,13 @@ const API = {
         return await response.json();
     },
 
+    async clearHistory() {
+        const response = await this.fetch(`${CONFIG.API_URL}/history/clear`, {
+            method: 'DELETE'
+        });
+        return await response.json();
+    },
+
     // Community
     async createCommunityPost(formData) {
         const response = await this.fetch(`${CONFIG.API_URL}/community/post`, {
