@@ -6,6 +6,16 @@ const DEFAULT_CONFIG = {
     ADMIN_URL: "http://localhost:8085"
 };
 
+// --- Smart Configuration Initialization ---
+const IS_PRODUCTION = window.location.hostname.includes('github.io');
+let CONFIG = { ...DEFAULT_CONFIG };
+
+// If on GitHub Pages, wipe localhost defaults immediately to avoid useless preflights/errors
+// This forces the app to wait for Discovery or manual input.
+if (IS_PRODUCTION) {
+    Object.keys(CONFIG).forEach(key => CONFIG[key] = "");
+}
+
 // --- Console Log Interception for Mobile Feedback ---
 const LOG_STORAGE_KEY = 'ttube_client_logs';
 const MAX_LOGS = 100;
@@ -44,8 +54,7 @@ console.info = (...args) => { captureLog('info', args); originalInfo.apply(conso
 
 // --- End Console Interception ---
 
-// Global config object that will be updated
-let CONFIG = { ...DEFAULT_CONFIG };
+// Global config object that will be updated (initialized above)
 
 // Tracks which URLs are "live"
 let ENDPOINT_STATUS = {
@@ -79,24 +88,38 @@ async function autoDiscoverEndpoints() {
         `discovery.json?t=${Date.now()}`
     ];
 
+    let found = false;
     for (const url of discoveryUrls) {
         try {
             console.log(`%c[DISCOVERY] Attempting to fetch endpoints from ${url}...`, "color: #3498db; font-weight: bold;");
             const response = await fetch(url);
             if (response.ok) {
                 const remoteConfig = await response.json();
+                
+                // CRITICAL: Validate that we didn't just fetch "localhost" from GitHub
+                // This can happen if the dev accidentally pushed local config.
+                if (remoteConfig.api && remoteConfig.api.includes('localhost') && IS_PRODUCTION) {
+                    console.warn("%c[DISCOVERY] GitHub returned localhost URLs. Ignoring to avoid CORS errors.", "color: #f39c12;");
+                    continue; 
+                }
+
                 if (remoteConfig.api) CONFIG.API_URL = remoteConfig.api;
                 if (remoteConfig.auth) CONFIG.AUTH_URL = remoteConfig.auth;
                 if (remoteConfig.video_stream) CONFIG.STREAM_URL = remoteConfig.video_stream;
                 if (remoteConfig.upload) CONFIG.UPLOAD_URL = remoteConfig.upload;
                 if (remoteConfig.admin) CONFIG.ADMIN_URL = remoteConfig.admin;
+                
                 console.log("%c[DISCOVERY] SUCCESS: Tunnels synchronized with GitHub.", "color: #2ecc71; font-weight: bold;");
+                found = true;
                 break; // Exit loop on success
             }
         } catch (e) {
             console.warn(`%c[DISCOVERY] ERROR: Failed to reach discovery endpoint ${url}: ${e.message}`, "color: #f39c12;");
-            // Continue to next URL
         }
+    }
+    
+    if (!found && IS_PRODUCTION) {
+        console.error("%c[DISCOVERY] FAILED: All discovery methods exhausted. Platform may be offline.", "color: #e74c3c; font-weight: bold;");
     }
     
     // Still apply manual overrides if any (they take precedence)
