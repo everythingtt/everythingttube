@@ -6,6 +6,44 @@ const DEFAULT_CONFIG = {
     ADMIN_URL: "http://localhost:8085"
 };
 
+// --- Console Log Interception for Mobile Feedback ---
+const LOG_STORAGE_KEY = 'ttube_client_logs';
+const MAX_LOGS = 100;
+
+// Initialize or clear logs if session is fresh
+if (!sessionStorage.getItem('session_active')) {
+    sessionStorage.setItem(LOG_STORAGE_KEY, JSON.stringify([]));
+    sessionStorage.setItem('session_active', 'true');
+}
+
+function captureLog(type, args) {
+    try {
+        let logs = JSON.parse(sessionStorage.getItem(LOG_STORAGE_KEY) || "[]");
+        const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' ');
+        logs.push({
+            type,
+            message,
+            timestamp: new Date().toLocaleTimeString(),
+            location: window.location.pathname.split('/').pop() || 'index.html'
+        });
+        if (logs.length > MAX_LOGS) logs.shift();
+        sessionStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+    } catch (e) { /* silent fail */ }
+}
+
+// Intercept original console methods
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
+const originalInfo = console.info;
+
+console.log = (...args) => { captureLog('log', args); originalLog.apply(console, args); };
+console.warn = (...args) => { captureLog('warn', args); originalWarn.apply(console, args); };
+console.error = (...args) => { captureLog('error', args); originalError.apply(console, args); };
+console.info = (...args) => { captureLog('info', args); originalInfo.apply(console, args); };
+
+// --- End Console Interception ---
+
 // Global config object that will be updated
 let CONFIG = { ...DEFAULT_CONFIG };
 
@@ -43,7 +81,7 @@ async function autoDiscoverEndpoints() {
 
     for (const url of discoveryUrls) {
         try {
-            console.log(`Discovering endpoints from ${url}...`);
+            console.log(`%c[DISCOVERY] Attempting to fetch endpoints from ${url}...`, "color: #3498db; font-weight: bold;");
             const response = await fetch(url);
             if (response.ok) {
                 const remoteConfig = await response.json();
@@ -52,11 +90,11 @@ async function autoDiscoverEndpoints() {
                 if (remoteConfig.video_stream) CONFIG.STREAM_URL = remoteConfig.video_stream;
                 if (remoteConfig.upload) CONFIG.UPLOAD_URL = remoteConfig.upload;
                 if (remoteConfig.admin) CONFIG.ADMIN_URL = remoteConfig.admin;
-                console.log("Automatic discovery successful:", CONFIG);
+                console.log("%c[DISCOVERY] SUCCESS: Tunnels synchronized with GitHub.", "color: #2ecc71; font-weight: bold;");
                 break; // Exit loop on success
             }
         } catch (e) {
-            console.warn(`Discovery error for ${url}:`, e.message);
+            console.warn(`%c[DISCOVERY] ERROR: Failed to reach discovery endpoint ${url}: ${e.message}`, "color: #f39c12;");
             // Continue to next URL
         }
     }
@@ -97,14 +135,19 @@ async function checkEndpointsHealth() {
             if (response.ok) {
                 ENDPOINT_STATUS[service] = 'online';
                 localStorage.setItem(`last_check_${service}`, Date.now().toString());
-                console.log(`Endpoint ${service} (${url}) is ONLINE`);
+                console.log(`%c[NETWORK] ${service.toUpperCase()} is ONLINE`, "color: #00ff00; font-weight: bold;");
             } else {
                 ENDPOINT_STATUS[service] = 'error';
-                console.warn(`Endpoint ${service} (${url}) returned error ${response.status}`);
+                console.warn(`%c[NETWORK] ${service.toUpperCase()} returned error ${response.status}`, "color: #ffa500;");
             }
         } catch (e) {
             ENDPOINT_STATUS[service] = 'offline';
-            console.warn(`Endpoint ${service} (${url}) is OFFLINE:`, e.message);
+            console.error(`%c[NETWORK] ${service.toUpperCase()} is OFFLINE: ${e.message}`, "color: #ff0000;");
+            
+            // Helpful tip for external users
+            if (window.location.hostname.includes('github.io')) {
+                console.info("%c[TIP] If you see CORS errors, it means the developer's PC is currently unreachable or Nginx is down.", "color: #888; font-style: italic;");
+            }
             
             // If ngrok fails, and we are on localhost, maybe we should auto-fallback to localhost ports?
             if (url.includes('ngrok-free.dev') && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {

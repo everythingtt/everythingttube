@@ -122,6 +122,7 @@ const API = {
 
     // Auth
     async login(email, password) {
+        console.log(`%c[AUTH] Attempting login for ${email}...`, "color: #3498db;");
         const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -130,16 +131,20 @@ const API = {
         
         const data = await response.json();
         if (response.ok && data.access_token) {
+            console.log("%c[AUTH] Login successful! Session tokens stored.", "color: #2ecc71; font-weight: bold;");
             // Store tokens in localStorage as an emergency fallback for cross-domain cookie issues
             localStorage.setItem('ett_token', data.access_token);
             if (data.csrf_token) {
                 localStorage.setItem('ett_csrf', data.csrf_token);
             }
+        } else {
+            console.error(`%c[AUTH] Login failed: ${data.detail || 'Invalid credentials'}`, "color: #e74c3c;");
         }
         return data;
     },
 
     async register(email, username, password) {
+        console.log(`%c[AUTH] Registering new user: ${username}...`, "color: #3498db;");
         const response = await this.fetch(`${CONFIG.AUTH_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -148,10 +153,13 @@ const API = {
         
         const data = await response.json();
         if (response.ok && data.access_token) {
+            console.log("%c[AUTH] Registration successful!", "color: #2ecc71; font-weight: bold;");
             localStorage.setItem('ett_token', data.access_token);
             if (data.csrf_token) {
                 localStorage.setItem('ett_csrf', data.csrf_token);
             }
+        } else {
+            console.error(`%c[AUTH] Registration failed: ${data.detail || 'Unknown error'}`, "color: #e74c3c;");
         }
         return data;
     },
@@ -190,26 +198,43 @@ const API = {
     },
 
     async uploadVideo(formData) {
+        console.log("%c[UPLOAD] Starting video upload...", "color: #3498db; font-weight: bold;");
         const response = await this.fetch(`${CONFIG.UPLOAD_URL}/video/upload`, {
             method: 'POST',
             body: formData
         });
-        return await response.json();
+        const data = await response.json();
+        if (response.ok) {
+            console.log(`%c[UPLOAD] SUCCESS: Video #${data.video_id} is being processed.`, "color: #2ecc71; font-weight: bold;");
+        } else {
+            console.error(`%c[UPLOAD] FAILED: ${data.detail || 'Server error'}`, "color: #e74c3c;");
+        }
+        return data;
     },
 
     async uploadSubtitles(videoId, file) {
+        console.log(`%c[UPLOAD] Uploading subtitles for video #${videoId}...`, "color: #3498db;");
         const formData = new FormData();
         formData.append('file', file);
         const response = await this.fetch(`${CONFIG.UPLOAD_URL}/video/upload-subtitles/${videoId}`, {
             method: 'POST',
             body: formData
         });
-        return await response.json();
+        const data = await response.json();
+        if (response.ok) {
+            console.log("%c[UPLOAD] Subtitles uploaded successfully.", "color: #2ecc71;");
+        }
+        return data;
     },
 
     async getVideoStream(videoId) {
+        console.log(`%c[STREAM] Requesting manifest for video #${videoId}...`, "color: #9b59b6;");
         const response = await this.fetch(`${CONFIG.API_URL}/video/stream/${videoId}`);
-        return await response.json();
+        const data = await response.json();
+        if (response.ok) {
+            console.log(`%c[STREAM] Manifest received. Type: ${data.type.toUpperCase()}`, "color: #2ecc71;");
+        }
+        return data;
     },
 
     async getRecommendations(videoId) {

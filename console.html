@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EverythingTTUBE - Client Console</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .console-container {
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            height: calc(100vh - 160px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .console-header {
+            padding: 12px 16px;
+            background: #1a1a1a;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .console-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            margin-bottom: 4px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: flex;
+            gap: 12px;
+        }
+        .log-time { color: #666; min-width: 80px; }
+        .log-loc { color: #3498db; min-width: 100px; text-align: right; }
+        .log-msg { flex: 1; }
+        
+        .log-type-log { color: #fff; border-left: 3px solid #666; }
+        .log-type-warn { color: #f39c12; background: rgba(243, 156, 18, 0.1); border-left: 3px solid #f39c12; }
+        .log-type-error { color: #e74c3c; background: rgba(231, 76, 60, 0.1); border-left: 3px solid #e74c3c; }
+        .log-type-info { color: #2ecc71; border-left: 3px solid #2ecc71; }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            padding: 8px 16px;
+            background: #111;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .filter-btn {
+            background: none;
+            border: 1px solid #444;
+            color: #888;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="index.html" class="logo">Everything<span>TTUBE</span> Console</a>
+        </div>
+        <div class="header-right">
+            <div id="user-info" class="user-info-container">
+                <a href="auth.html" id="login-link" class="login-link">Sign In</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> <span>Home</span></a>
+        <a href="history.html"><i class="fas fa-history"></i> <span>History</span></a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> <span>Studio</span></a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <a href="network.html"><i class="fas fa-network-wired"></i> <span>Network</span></a>
+        <a href="console.html" class="active"><i class="fas fa-terminal"></i> <span>Client Console</span></a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> <span>Policies</span></a>
+    </div>
+
+    <main>
+        <div class="console-container">
+            <div class="console-header">
+                <div style="font-weight: bold; color: var(--text-secondary);">Client Debugger</div>
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="clearDisplay()" class="action-btn" style="font-size: 12px; padding: 4px 12px;"><i class="fas fa-ban"></i> Clear</button>
+                    <button onclick="loadLogs()" class="action-btn" style="font-size: 12px; padding: 4px 12px;"><i class="fas fa-sync"></i> Refresh</button>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" onclick="setFilter('error')">Errors</button>
+                <button class="filter-btn" onclick="setFilter('warn')">Warnings</button>
+                <button class="filter-btn" onclick="setFilter('log')">Logs</button>
+            </div>
+            <div id="console-output" class="console-body">
+                <!-- Logs here -->
+            </div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; text-align: center;">
+            This console captures frontend events for debugging on mobile devices.
+        </p>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script>
+        let currentFilter = 'all';
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.toLowerCase() === filter || (filter === 'all' && btn.innerText === 'All'));
+            });
+            loadLogs();
+        }
+
+        function clearDisplay() {
+            sessionStorage.setItem('ttube_client_logs', JSON.stringify([]));
+            loadLogs();
+        }
+
+        function loadLogs() {
+            const output = document.getElementById('console-output');
+            const logs = JSON.parse(sessionStorage.getItem('ttube_client_logs') || "[]");
+            
+            if (logs.length === 0) {
+                output.innerHTML = '<div style="color: #444; text-align: center; margin-top: 40px;">No logs captured yet.</div>';
+                return;
+            }
+
+            const filtered = currentFilter === 'all' ? logs : logs.filter(l => l.type === currentFilter);
+
+            output.innerHTML = filtered.reverse().map(l => {
+                // Strip CSS color codes from message for UI display
+                const cleanMsg = l.message.replace(/%c/g, '').split(', "color:')[0];
+                
+                return `
+                    <div class="log-entry log-type-${l.type}">
+                        <span class="log-time">[${l.timestamp}]</span>
+                        <span class="log-msg">${cleanMsg}</span>
+                        <span class="log-loc">${l.location}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('main').classList.toggle('shifted');
+        });
+
+        document.addEventListener('DOMContentLoaded', loadLogs);
+        
+        // Auto-refresh every 2 seconds
+        setInterval(loadLogs, 2000);
+    </script>
+</body>
+</html>
