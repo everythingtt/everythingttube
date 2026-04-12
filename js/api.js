@@ -39,10 +39,13 @@ const API = {
         }
 
         // Append ngrok bypass query parameter to ALL ngrok requests
+        // Ensure we handle existing query params correctly
         if (absoluteUrl.includes('ngrok-free.dev')) {
             const urlObj = new URL(absoluteUrl);
-            urlObj.searchParams.set('ngrok-skip-browser-warning', 'any');
-            absoluteUrl = urlObj.toString();
+            if (!urlObj.searchParams.has('ngrok-skip-browser-warning')) {
+                urlObj.searchParams.set('ngrok-skip-browser-warning', 'any');
+                absoluteUrl = urlObj.toString();
+            }
         }
 
         options.headers = this.getHeaders(options.headers || {});
