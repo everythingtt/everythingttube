@@ -14,6 +14,18 @@
             max-width: 1400px;
             margin: 0 auto;
         }
+        @media (max-width: 1024px) {
+            .watch-container {
+                flex-direction: column;
+                padding: 0 16px;
+            }
+            .player-section {
+                width: 100%;
+            }
+            .recommendations {
+                width: 100% !important;
+            }
+        }
         .player-section {
             flex: 1;
         }
@@ -292,11 +304,14 @@
 <body>
     <header>
         <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
         </div>
         <div class="search-bar">
-            <input type="text" placeholder="Search videos...">
-            <button><i class="fas fa-search"></i></button>
+            <input type="text" id="search-input" placeholder="Search videos..." aria-label="Search">
+            <button id="search-btn" aria-label="Perform search"><i class="fas fa-search"></i></button>
         </div>
         <div class="header-right">
             <div id="user-info" class="user-info-container">
@@ -305,7 +320,22 @@
         </div>
     </header>
 
-    <main style="margin-left: 0;">
+    <div class="sidebar">
+        <a href="index.html"><i class="fas fa-home"></i> <span>Home</span></a>
+        <a href="history.html"><i class="fas fa-history"></i> <span>History</span></a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> <span>Studio</span></a>
+        <a href="upload.html"><i class="fas fa-upload"></i> <span>Upload</span></a>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        <div id="admin-nav" style="display: none;">
+            <a href="admin.html"><i class="fas fa-user-shield"></i> <span>Admin Panel</span></a>
+            <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
+        </div>
+        <a href="tokens.html"><i class="fas fa-coins"></i> <span>Monetization</span></a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> <span>Network</span></a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> <span>Policies</span></a>
+    </div>
+
+    <main>
         <div class="watch-container">
             <div class="player-section">
                 <div class="video-player" id="player-container">
@@ -989,6 +1019,12 @@
                 }
             }
         }
+
+        // Mobile Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('main').classList.toggle('shifted');
+        });
 
         document.addEventListener('DOMContentLoaded', async () => {
             await DISCOVERY_PROMISE;

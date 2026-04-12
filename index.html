@@ -10,11 +10,14 @@
 <body>
     <header>
         <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Toggle navigation menu">
+                <i class="fas fa-bars"></i>
+            </button>
             <a href="index.html" class="logo">Everything<span>TTUBE</span></a>
         </div>
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Search videos...">
-            <button id="search-btn"><i class="fas fa-search"></i></button>
+            <input type="text" id="search-input" placeholder="Search videos..." aria-label="Search">
+            <button id="search-btn" aria-label="Perform search"><i class="fas fa-search"></i></button>
         </div>
         <div class="header-right">
             <div id="user-info" class="user-info-container">
@@ -34,17 +37,18 @@
     </header>
 
     <div class="sidebar">
-        <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
-        <a href="studio.html"><i class="fas fa-clapperboard"></i> Studio</a>
-        <a href="upload.html"><i class="fas fa-upload"></i> Upload</a>
+        <a href="index.html" class="active"><i class="fas fa-home"></i> <span>Home</span></a>
+        <a href="history.html"><i class="fas fa-history"></i> <span>History</span></a>
+        <a href="studio.html"><i class="fas fa-clapperboard"></i> <span>Studio</span></a>
+        <a href="upload.html"><i class="fas fa-upload"></i> <span>Upload</span></a>
         <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
         <div id="admin-nav" style="display: none;">
-            <a href="admin.html"><i class="fas fa-user-shield"></i> Admin Panel</a>
+            <a href="admin.html"><i class="fas fa-user-shield"></i> <span>Admin Panel</span></a>
             <hr style="margin: 12px 0; border: 0; border-top: 1px solid var(--border-color);">
         </div>
-        <a href="tokens.html"><i class="fas fa-coins"></i> Monetization</a>
-        <a href="network.html"><i class="fas fa-network-wired"></i> Network</a>
-        <a href="policies.html"><i class="fas fa-gavel"></i> Policies</a>
+        <a href="tokens.html"><i class="fas fa-coins"></i> <span>Monetization</span></a>
+        <a href="network.html"><i class="fas fa-network-wired"></i> <span>Network</span></a>
+        <a href="policies.html"><i class="fas fa-gavel"></i> <span>Policies</span></a>
     </div>
 
     <main>
@@ -199,27 +203,35 @@
                     <a href="studio.html" style="color: white; margin-left: 15px;">${API.escapeHTML(user.username)}</a>
                     <button onclick="API.logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 10px;">Logout</button>
                 `;
-                if (user.role === 'admin') {
-                    document.getElementById('admin-nav').style.display = 'block';
-                }
+                document.getElementById('admin-nav').style.display = user.is_admin ? 'block' : 'none';
                 loadNotifications();
+            } else {
+                userInfo.innerHTML = '<a href="auth.html" id="login-link" class="login-link">Sign In</a>';
             }
         }
 
-        // Search handler
-        document.getElementById('search-btn').addEventListener('click', () => {
-            const query = document.getElementById('search-input').value;
-            loadVideos(query);
-        });
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') loadVideos(e.target.value);
+        // Mobile Menu Toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('main').classList.toggle('shifted');
         });
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await DISCOVERY_PROMISE;
-            loadVideos();
-            checkLogin();
+        // Search logic
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value.trim();
+            if (query) loadVideos(query);
         });
+
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim();
+                if (query) loadVideos(query);
+            }
+        });
+
+        // Initial load
+        checkLogin();
+        loadVideos();
     </script>
 </body>
 </html>
