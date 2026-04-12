@@ -87,8 +87,7 @@ async function checkEndpointsHealth() {
 
              const response = await fetch(bypassUrl.toString(), { 
                  method: 'GET', 
-                 signal: controller.signal,
-                 headers: { 'ngrok-skip-browser-warning': 'any' }
+                 signal: controller.signal
              });
             clearTimeout(id);
             

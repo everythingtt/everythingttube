@@ -26,7 +26,7 @@ self.addEventListener('fetch', (event) => {
             event.respondWith(
                 (async () => {
                     const newHeaders = new Headers(event.request.headers);
-                    newHeaders.set(BYPASS_HEADER, BYPASS_VALUE);
+                    // No custom header here to avoid preflight!
                     
                     const requestInit = {
                         method: event.request.method,

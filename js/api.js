@@ -4,7 +4,6 @@ const API = {
     // Utility for headers
     getHeaders(extraHeaders = {}) {
         const headers = {
-            'ngrok-skip-browser-warning': 'any',
             ...extraHeaders
         };
         
