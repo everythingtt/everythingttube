@@ -157,10 +157,15 @@
             progressFill.style.width = '0%';
 
             const xhr = new XMLHttpRequest();
-            const uploadUrl = API.getResourceUrl('upload', '/video/upload');
-            xhr.open('POST', uploadUrl, true);
+            // Use query parameter bypass instead of header to avoid preflight (OPTIONS) issues on large uploads
+            const uploadUrl = new URL(API.getResourceUrl('upload', '/video/upload'));
+            if (!uploadUrl.searchParams.has('ngrok-skip-browser-warning')) {
+                uploadUrl.searchParams.set('ngrok-skip-browser-warning', 'any');
+            }
+            
+            xhr.open('POST', uploadUrl.toString(), true);
             xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-            xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
+            // No custom ngrok header here!
 
             xhr.upload.onprogress = (event) => {
                 if (event.lengthComputable) {

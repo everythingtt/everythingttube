@@ -103,7 +103,17 @@
                     </div>
                 `).join('');
             } catch (error) {
-                videoList.innerHTML = '<p>Error loading videos. Make sure backend is running.</p>';
+                videoList.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: rgba(255,0,0,0.05); border-radius: 12px; border: 1px dashed var(--primary-color);">
+                        <i class="fas fa-plug-circle-xmark" style="font-size: 48px; color: var(--primary-color); margin-bottom: 16px;"></i>
+                        <h3>Backend Connection Failed</h3>
+                        <p style="color: var(--text-secondary); margin: 12px 0;">The server on the developer's PC might be offline or updating.</p>
+                        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                            <button onclick="location.reload()" class="primary-btn" style="width: auto; margin: 0;">Retry Connection</button>
+                            <a href="network.html" class="action-btn" style="text-decoration: none;">Check Network Status</a>
+                        </div>
+                    </div>
+                `;
                 console.error(error);
             }
         }

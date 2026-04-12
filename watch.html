@@ -713,9 +713,12 @@
                         if (Hls.isSupported()) {
                             hlsInstance = new Hls({
                                 xhrSetup: function (xhr, url) {
-                                    // For fragments and playlists, ensure the bypass header is sent
-                                    xhr.setRequestHeader('ngrok-skip-browser-warning', 'any');
-                                    // Also include credentials for session-based access if needed
+                                    // Use query parameter bypass instead of header to avoid preflight (OPTIONS) overhead!
+                                    const bypassUrl = new URL(url);
+                                    if (!bypassUrl.searchParams.has('ngrok-skip-browser-warning')) {
+                                        bypassUrl.searchParams.set('ngrok-skip-browser-warning', 'any');
+                                        xhr.open('GET', bypassUrl.toString(), true);
+                                    }
                                     xhr.withCredentials = true;
                                 }
                             });

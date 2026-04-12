@@ -7,15 +7,14 @@ const API = {
             ...extraHeaders
         };
         
-        // 1. Attach Access Token (Bearer) if available in localStorage
+        // 1. Attach Access Token (Bearer) - REQUIRED for cross-subdomain ngrok tunnels
         const accessToken = localStorage.getItem('ett_token');
         if (accessToken) {
             headers['Authorization'] = `Bearer ${accessToken}`;
         }
 
-        // 2. Attach CSRF token
-        // Priority: localStorage (fallback) -> Cookie (primary)
-        const csrfToken = this.getCookie('ett_csrf') || localStorage.getItem('ett_csrf');
+        // 2. Attach CSRF token (only useful if on same domain as cookie, but we send it anyway)
+        const csrfToken = localStorage.getItem('ett_csrf') || this.getCookie('ett_csrf');
         if (csrfToken) {
             headers['X-CSRF-Token'] = csrfToken;
         }
@@ -33,11 +32,17 @@ const API = {
 
     // Global fetch wrapper
     async fetch(url, options = {}) {
+        // Handle relative URLs
+        let absoluteUrl = url;
+        if (!url.startsWith('http')) {
+            absoluteUrl = new URL(url, window.location.origin).toString();
+        }
+
         // Append ngrok bypass query parameter to ALL ngrok requests
-        if (url.includes('ngrok-free.dev')) {
-            const urlObj = new URL(url);
+        if (absoluteUrl.includes('ngrok-free.dev')) {
+            const urlObj = new URL(absoluteUrl);
             urlObj.searchParams.set('ngrok-skip-browser-warning', 'any');
-            url = urlObj.toString();
+            absoluteUrl = urlObj.toString();
         }
 
         options.headers = this.getHeaders(options.headers || {});
@@ -46,7 +51,7 @@ const API = {
         options.credentials = 'include';
 
         try {
-            const response = await fetch(url, options);
+            const response = await fetch(absoluteUrl, options);
             if (response.status === 401) {
                 // If unauthorized, redirect to login unless we are already there
                 if (!window.location.href.includes('auth.html')) {

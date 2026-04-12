@@ -82,11 +82,14 @@ async function checkEndpointsHealth() {
              const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
              
              // Use bypass query param for health check
+             // IMPORTANT: We do NOT send custom headers here to avoid CORS preflight (OPTIONS)
+             // which is the most common cause of "Endpoint is OFFLINE" for external users.
              const bypassUrl = new URL(url + "/");
              bypassUrl.searchParams.set('ngrok-skip-browser-warning', 'any');
 
              const response = await fetch(bypassUrl.toString(), { 
                  method: 'GET', 
+                 mode: 'cors',
                  signal: controller.signal
              });
             clearTimeout(id);

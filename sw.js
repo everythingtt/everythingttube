@@ -13,39 +13,26 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Skip non-GET requests for the simple bypass to avoid breaking POST/uploads
+    if (event.request.method !== 'GET') return;
+
     let url = new URL(event.request.url);
     
-    // 1. Force Ngrok Bypass for all requests
+    // 1. Force Ngrok Bypass for all GET requests to ngrok tunnels
     if (url.hostname.endsWith('.ngrok-free.dev')) {
         // Only modify if it doesn't already have the bypass param
         if (!url.searchParams.has(BYPASS_HEADER)) {
             url.searchParams.set(BYPASS_HEADER, BYPASS_VALUE);
             
-            // We must create a new request with the updated URL
-            // and keep all original headers/method/body
+            // Redirect the request to the new URL with the query param
+            // This is safer than modifying headers which triggers CORS preflights
             event.respondWith(
-                (async () => {
-                    const newHeaders = new Headers(event.request.headers);
-                    // No custom header here to avoid preflight!
-                    
-                    const requestInit = {
-                        method: event.request.method,
-                        headers: newHeaders,
-                        mode: 'cors',
-                        credentials: event.request.credentials || 'include'
-                    };
-                    
-                    // Body is only allowed for certain methods
-                    if (!['GET', 'HEAD'].includes(event.request.method)) {
-                        requestInit.body = await event.request.clone().blob();
-                    }
-                    
-                    const modifiedRequest = new Request(url.toString(), requestInit);
-                    return fetch(modifiedRequest);
-                })()
+                fetch(url.toString(), {
+                    mode: 'cors',
+                    credentials: event.request.credentials || 'include'
+                })
             );
             return;
         }
     }
-    // No further processing needed here for other requests
 });
